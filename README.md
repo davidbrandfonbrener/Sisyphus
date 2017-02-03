@@ -1,4 +1,4 @@
-# tensorcog
+# Project Sisyphus
 
 todo:
 
