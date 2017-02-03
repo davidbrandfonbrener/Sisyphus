@@ -179,4 +179,4 @@ with tf.Session() as sess:
     wrec = sess.run(W)
 
 
-#todo: masking, visualization, saving trained networks, performance tests
+#todo: clean up structure, masking, visualization, saving trained networks, performance tests
