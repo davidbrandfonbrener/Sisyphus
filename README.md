@@ -15,3 +15,5 @@ saving trained networks
 performance tests
 
 regularization
+
+initialization (fix spectral radius)
