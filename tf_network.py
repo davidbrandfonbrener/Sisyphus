@@ -93,7 +93,7 @@ rec_noise = .1
 
 # Network Parameters
 n_in = 2 #ins
-n_hidden = 50 # hidden layer num of features
+n_hidden = 10 # hidden layer num of features
 n_out = 1 # outs
 
 
@@ -113,7 +113,8 @@ with tf.variable_scope('rnn_cell'):
     W = tf.get_variable('W', [n_hidden, n_hidden])
     Z = tf.get_variable('Z', [n_hidden, n_out])
     Dale = tf.get_variable('Dale', [n_hidden, n_hidden], initializer=tf.constant_initializer(dale), trainable=False)
-    #b = tf.get_variable('b', [n_hidden], initializer=tf.constant_initializer(0.0))
+    brec = tf.get_variable('brec', [n_hidden], initializer=tf.constant_initializer(0.0))
+    bout = tf.get_variable('bout', [n_hidden], initializer=tf.constant_initializer(0.0))
 
 
 #step function
@@ -123,11 +124,13 @@ def rnn_cell(rnn_in, state):
         U = tf.get_variable('U')
         W = tf.get_variable('W')
         Z = tf.get_variable('Z')
+        brec = tf.get_variable('brec')
+        bout = tf.get_variable('bout')
         Dale = tf.get_variable('Dale')
-        new_state = state * tau + alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(W), Dale)) + tf.matmul(tf.abs(rnn_in), U)) \
+        new_state = state * tau + alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(W), Dale)) + tf.matmul(tf.abs(rnn_in), U) + brec) \
             + tf.random_normal(state.get_shape(), mean=0.0, stddev=rec_noise)
         #Is this next line right????
-        new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(Dale, tf.abs(Z)))
+        new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(Dale, tf.abs(Z))) + bout
     return new_output, new_state
 
 
@@ -179,4 +182,3 @@ with tf.Session() as sess:
     wrec = sess.run(W)
 
 
-#todo: clean up structure, masking, visualization, saving trained networks, performance tests
