@@ -5,76 +5,60 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def set_params(nturns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
-                    var_delay_length = 0, stim_noise = 0, rec_noise = .1,
-                    sample_size = 128, epochs = 100, N_rec = 50, dale_ratio=0.8, tau=100):
-    params = dict()
-    params['nturns']          = nturns
-    params['input_wait']       = input_wait
-    params['quiet_gap']        = quiet_gap
-    params['stim_dur']         = stim_dur
-    params['var_delay_length'] = var_delay_length
-    params['stim_noise']       = stim_noise
-    params['rec_noise']        = rec_noise
-    params['sample_size']      = sample_size
-    params['epochs']           = epochs
-    params['N_rec']            = N_rec
-    params['dale_ratio']       = dale_ratio
-    params['tau'] = tau
 
-    return params
+class Model(object):
 
-# This generates the training data for our network
-# It will be a set of input_times and output_times for when we expect input
-# and when the corresponding output is expected
-def generate_trials(params):
-    nturns = params['nturns']
-    input_wait = params['input_wait']
-    quiet_gap = params['quiet_gap']
-    stim_dur = params['stim_dur']
-    var_delay_length = params['var_delay_length']
-    stim_noise = params['stim_noise']
-    sample_size = int(params['sample_size'])
+    def __init__(self, n_in, n_hidden, n_out, learning_rate, training_iters, n_steps, batch_size,
+                 display_step, tau, dale_ratio, rec_noise)
+        #network size
+        self.n_in = n_in
+        self.n_hidden = n_hidden
+        self.n_out = n_out
 
-    if var_delay_length == 0:
-        var_delay = np.zeros(sample_size, dtype=int)
-    else:
-        var_delay = np.random.randint(var_delay_length, size=sample_size) + 1
+        #training parameters
+        self.learning_rate = learning_rate
+        self.training_iters = training_iters
+        self.n_steps = n_steps
+        self.batch_size = batch_size
+        self.display_step = display_step
 
-    input_times = np.zeros([sample_size, nturns], dtype=np.int)
-    output_times = np.zeros([sample_size, nturns], dtype=np.int)
+        #neuro parameters
+        self.tau = tau
+        self.alpha = 1.0 - tau
+        self.dale_ratio = dale_ratio
+        self.rec_noise = rec_noise
 
-    turn_time = np.zeros(sample_size, dtype=np.int)
+        #dale matrix
+        dale_vec = np.ones(n_hidden)
+        dale_vec[int(dale_ratio * n_hidden):] = -1
+        self.dale = np.diag(dale_vec)
 
-    for sample in np.arange(sample_size):
-        turn_time[sample] = stim_dur + quiet_gap + var_delay[sample]
-        for i in np.arange(nturns):
-            input_times[sample, i] = input_wait + i * turn_time[sample]
-            output_times[sample, i] = input_wait + i * turn_time[sample] + stim_dur
+        #tensorflow initializations
+        self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
+        self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
+        self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
 
-    seq_dur = int(max([output_times[sample, nturns - 1] + quiet_gap, sample in np.arange(sample_size)]))
+        # trainable variables
+        with tf.variable_scope('rnn'):
+            self.U = tf.get_variable('U', [n_in, n_hidden])
+            self.W = tf.get_variable('W', [n_hidden, n_hidden])
+            self.Z = tf.get_variable('Z', [n_hidden, n_out])
+            self.Dale = tf.get_variable('Dale', [n_hidden, n_hidden], initializer=tf.constant_initializer(dale),
+                                   trainable=False)
+            self.brec = tf.get_variable('brec', [n_hidden], initializer=tf.constant_initializer(0.0))
+            self.bout = tf.get_variable('bout', [n_hidden], initializer=tf.constant_initializer(0.0))
 
-    x_train = np.zeros([sample_size, seq_dur, 2])
-    y_train = 0.5 * np.ones([sample_size, seq_dur, 1])
-    for sample in np.arange(sample_size):
-        for turn in np.arange(nturns):
-            firing_neuron = np.random.randint(2)  # 0 or 1
-            x_train[sample,
-            input_times[sample, turn]:(input_times[sample, turn] + stim_dur),
-            firing_neuron] = 1
-            y_train[sample,
-            output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]),
-            0] = firing_neuron
+    #implement one step of the RNN
+    def rnn_step(self):
 
-    mask = np.zeros((sample_size, seq_dur))
-    for sample in np.arange(sample_size):
-        mask[sample, :] = [0 if x == .5 else 1 for x in y_train[sample, :, :]]
+    #apply the step to a full input vector
+    def compute_predictions(self):
 
-    x_train = x_train + stim_noise * np.random.randn(sample_size, seq_dur, 2)
-    params['input_times'] = input_times
-    params['output_times'] = output_times
-    return x_train, y_train, mask
+    #train the model using Adam
+    def train(self):
 
+    #use a trained model to get test outputs
+    def test(self):
 
 
 
@@ -148,12 +132,12 @@ def RNN(x):
     return tf.transpose(rnn_outputs, [1, 0, 2])
 
 
-pred = RNN(x)
-
-
 def reg_loss(pred, y):
     return tf.reduce_mean(tf.square(pred - y))
 
+
+
+pred = RNN(x)
 
 # Define loss and optimizer
 cost = reg_loss(pred, y)
