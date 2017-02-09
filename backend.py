@@ -8,12 +8,13 @@ import matplotlib.pyplot as plt
 
 class Model(object):
 
-    def __init__(self, n_in, n_hidden, n_out, n_steps, tau, dale_ratio, rec_noise):
+    def __init__(self, n_in, n_hidden, n_out, n_steps, tau, dale_ratio, rec_noise, batch_size):
         #network size
         self.n_in = n_in
         self.n_hidden = n_hidden
         self.n_out = n_out
         self.n_steps = n_steps
+        self.batch_size = batch_size
 
         #neuro parameters
         self.tau = tau
@@ -32,30 +33,31 @@ class Model(object):
         self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
 
         # trainable variables
-        with tf.variable_scope('rnn'):
-            self.U = tf.get_variable('U', [n_in, n_hidden])
-            self.W = tf.get_variable('W', [n_hidden, n_hidden])
-            self.Z = tf.get_variable('Z', [n_hidden, n_out])
-            self.Dale = tf.get_variable('Dale', [n_hidden, n_hidden], initializer=tf.constant_initializer(dale),
-                                   trainable=False)
-            self.brec = tf.get_variable('brec', [n_hidden], initializer=tf.constant_initializer(0.0))
-            self.bout = tf.get_variable('bout', [n_hidden], initializer=tf.constant_initializer(0.0))
+        with tf.variable_scope('model'):
+            # U = tf.get_variable('U', [n_in, n_hidden])
+            # W = tf.get_variable('W', [n_hidden, n_hidden])
+            # Z = tf.get_variable('Z', [n_hidden, n_out])
+            # Dale = tf.get_variable('Dale', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.dale),
+            #                        trainable=False)
+            # brec = tf.get_variable('brec', [n_hidden], initializer=tf.constant_initializer(0.0))
+            # bout = tf.get_variable('bout', [n_hidden], initializer=tf.constant_initializer(0.0))
 
             self.predictions, self.states = self.compute_predictions()
             self.loss = self.reg_loss()
 
     #implement one step of the RNN
     def rnn_step(self, rnn_in, state):
-        with tf.variable_scope('rnn', reuse=True):
-            U = tf.get_variable('U')
-            W = tf.get_variable('W')
-            Z = tf.get_variable('Z')
-            brec = tf.get_variable('brec')
-            bout = tf.get_variable('bout')
-            Dale = tf.get_variable('Dale')
-            new_state = state * tau + alpha * (
-            tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(W), Dale)) + tf.matmul(tf.abs(rnn_in), U) + brec) \
-                        + tf.random_normal(state.get_shape(), mean=0.0, stddev=rec_noise)
+        with tf.variable_scope('rnn_step'):
+            U = tf.get_variable('U', [self.n_in, self.n_hidden])
+            W = tf.get_variable('W', [self.n_hidden, self.n_hidden])
+            Z = tf.get_variable('Z', [self.n_hidden, self.n_out])
+            Dale = tf.get_variable('Dale', [self.n_hidden, self.n_hidden], initializer=tf.constant_initializer(self.dale),
+                                   trainable=False)
+            brec = tf.get_variable('brec', [self.n_hidden], initializer=tf.constant_initializer(0.0))
+            bout = tf.get_variable('bout', [self.n_hidden], initializer=tf.constant_initializer(0.0))
+
+            new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(W), Dale))
+                + tf.matmul(tf.abs(rnn_in), U) + brec) + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
             # Is this next line right????
             new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(Dale, tf.abs(Z))) + bout
         return new_output, new_state
@@ -73,6 +75,7 @@ class Model(object):
             rnn_states.append(state)
 
         return tf.transpose(rnn_outputs, [1, 0, 2]), tf.transpose(rnn_states, [1, 0, 2])
+        #return tf.scan(self.rnn_step, tf.transpose(self.x, [1,0,2]), initializer = self.init_state)
 
     #regularized loss function
     def reg_loss(self):

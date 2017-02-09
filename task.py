@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
-import tf_network
+import tensorflow as tf
+import backend as B
 
 
 def set_params(nturns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
@@ -26,7 +26,7 @@ def set_params(nturns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
 # This generates the training data for our network
 # It will be a set of input_times and output_times for when we expect input
 # and when the corresponding output is expected
-def generate_trials(params):
+def build_trials(params):
     nturns = params['nturns']
     input_wait = params['input_wait']
     quiet_gap = params['quiet_gap']
@@ -73,3 +73,14 @@ def generate_trials(params):
     params['input_times'] = input_times
     params['output_times'] = output_times
     return x_train, y_train, mask
+
+def generate_trials(params):
+    while 1 > 0:
+        yield build_trials(params)
+
+
+params = set_params()
+generator = generate_trials(params)
+model = B.Model(2, 50, 1, 800, 1, .8, .1, 128)
+sess = tf.Session()
+B.train(sess, model, generator, .001, 20000, 128, 10)
