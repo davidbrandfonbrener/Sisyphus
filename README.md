@@ -2,8 +2,6 @@
 
 todo:
 
-clean up structure
-
 masking of objective function (disregard certain times)
 
 connectivity masking
