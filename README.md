@@ -10,7 +10,7 @@ visualization
 
 saving trained networks
 
-performance tests
+performance tests (scan function, etc.)
 
 regularization
 
