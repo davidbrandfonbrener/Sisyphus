@@ -30,6 +30,7 @@ class Model(object):
         #tensorflow initializations
         self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
         self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
+        self.output_mask = tf.placeholder("int", [batch_size, n_steps, 1])
         self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
 
         # trainable variables
