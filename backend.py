@@ -28,6 +28,9 @@ class Model(object):
         dale_vec[int(dale_ratio * n_hidden):] = 0
         self.dale_out = np.diag(dale_vec)
 
+        #connectivity
+        connect_mat = np.ones((n_hidden, n_hidden)) - np.diag(np.ones(n_hidden))
+
         # tensorflow initializations
         self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
         self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
@@ -37,6 +40,7 @@ class Model(object):
         with tf.variable_scope("model"):
             self.U = tf.get_variable('U', [n_hidden, n_in])
             self.W = tf.get_variable('W', [n_hidden, n_hidden])
+            self.W = connect_mat * self.W
             self.Z = tf.get_variable('Z', [n_out, n_hidden])
             self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.dale_rec),
                                         trainable=False)
@@ -93,12 +97,14 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
                   "{:.6f}".format(loss / batch_size))
         step += 1
     print("Optimization Finished!")
-    print(model.W)
+    plt.imshow(np.matmul(abs(model.W.eval(session=sess)), model.dale_rec), interpolation="none")
+    plt.show()
+    plt.imshow(np.matmul(abs(model.Z.eval(session=sess)), model.dale_out), interpolation="none")
+    plt.show()
 
 
 # use a trained model to get test outputs
 def test(self):
     return
-
 
 
