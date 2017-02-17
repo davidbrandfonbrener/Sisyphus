@@ -1,4 +1,4 @@
-
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import backend as B
@@ -65,9 +65,9 @@ def build_trials(params):
             output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]),
             0] = firing_neuron
 
-    mask = np.zeros((sample_size, seq_dur, 1))
+    mask = np.zeros((sample_size, seq_dur))
     for sample in np.arange(sample_size):
-        mask[sample, :, 0] = [0 if x == .5 else 1 for x in y_train[sample, :, 0]]
+        mask[sample, :] = [0 if x == .5 else 1 for x in y_train[sample, :, :]]
 
     x_train = x_train + stim_noise * np.random.randn(sample_size, seq_dur, 2)
     params['input_times'] = input_times
@@ -75,18 +75,13 @@ def build_trials(params):
     return x_train, y_train, mask
 
 def generate_trials(params):
-    while True:
+    while 1 > 0:
         yield build_trials(params)
 
 
-params = set_params(epochs=200, sample_size= 128,\
-                    input_wait=50, stim_dur=50, quiet_gap=100,\
-                    nturns=5, N_rec=50, rec_noise=0.05,\
-                    stim_noise=0.1, dale_ratio=.8, tau=100)
-trial_params = build_trials(params)
+params = set_params(epochs=200, sample_size= 128, input_wait=50, stim_dur=50, quiet_gap=100, nturns=5, N_rec=50, rec_noise=0.05,
+                        stim_noise=0.1, dale_ratio=.8, tau=100)
 generator = generate_trials(params)
-
-model = B.Model(steps = 800, batch_size=128, output_mask=trial_params[2])
-
+model = B.Model(2, 50, 1, 800, 1, .8, .1, 128)
 sess = tf.Session()
 B.train(sess, model, generator, .001, 20000, 128, 10)
