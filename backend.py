@@ -6,13 +6,14 @@ import matplotlib.pyplot as plt
 
 
 class Model(object):
-    def __init__(self, n_in, n_hidden, n_out, n_steps, tau, dale_ratio, rec_noise, batch_size):
+    def __init__(self, n_in, n_hidden, n_out, n_steps, tau, dale_ratio, rec_noise, batch_size, output_mask):
         # network size
         self.n_in = n_in
         self.n_hidden = n_hidden
         self.n_out = n_out
         self.n_steps = n_steps
         self.batch_size = batch_size
+        self.output_mask = output_mask
 
         # neuro parameters
         self.tau = tau
@@ -23,7 +24,9 @@ class Model(object):
         # dale matrix
         dale_vec = np.ones(n_hidden)
         dale_vec[int(dale_ratio * n_hidden):] = -1
-        self.dale = np.diag(dale_vec)
+        self.dale_rec = np.diag(dale_vec)
+        dale_vec[int(dale_ratio * n_hidden):] = 0
+        self.dale_out = np.diag(dale_vec)
 
         # tensorflow initializations
         self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
@@ -33,25 +36,27 @@ class Model(object):
 
         # trainable variables
         with tf.variable_scope("model"):
-            self.U = tf.get_variable('U', [n_in, n_hidden])
+            self.U = tf.get_variable('U', [n_hidden, n_in])
             self.W = tf.get_variable('W', [n_hidden, n_hidden])
-            self.Z = tf.get_variable('Z', [n_hidden, n_out])
-            self.Dale = tf.get_variable('Dale', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.dale),
+            self.Z = tf.get_variable('Z', [n_out, n_hidden])
+            self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.dale_rec),
                                         trainable=False)
+            self.Dale_out = tf.get_variable('Dale_out', [n_hidden, n_hidden],
+                                              initializer=tf.constant_initializer(self.dale_out),
+                                              trainable=False)
             self.brec = tf.get_variable('brec', [n_hidden], initializer=tf.constant_initializer(0.0))
-            self.bout = tf.get_variable('bout', [n_hidden], initializer=tf.constant_initializer(0.0))
+            self.bout = tf.get_variable('bout', [n_out], initializer=tf.constant_initializer(0.0))
 
             self.predictions, self.states = self.compute_predictions()
-            self.loss = self.reg_loss()
+            self.loss = tf.losses.mean_squared_error(self.predictions, self.y)
 
     # implement one step of the RNN
     def rnn_step(self, rnn_in, state):
-        new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(self.W), self.Dale))
-                                                     + tf.matmul(tf.abs(rnn_in),
-                                                                 self.U) + self.brec) + tf.random_normal(
-            state.get_shape(), mean=0.0, stddev=self.rec_noise)
+        new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(self.W), self.Dale_rec, name="in1"), transpose_b=True, name="1")
+                                                     + tf.matmul(tf.abs(rnn_in),self.U, transpose_b=True, name="2") +
+                                                     self.brec) + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
         # Is this next line right????
-        new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(self.Dale, tf.abs(self.Z))) + self.bout
+        new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(tf.abs(self.Z), self.Dale_out, name="in2"), transpose_b=True, name="3") + self.bout
         return new_output, new_state
 
     # apply the step to a full input vector

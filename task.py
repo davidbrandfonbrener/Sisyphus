@@ -82,6 +82,6 @@ def generate_trials(params):
 params = set_params(epochs=200, sample_size= 128, input_wait=50, stim_dur=50, quiet_gap=100, nturns=5, N_rec=50, rec_noise=0.05,
                         stim_noise=0.1, dale_ratio=.8, tau=100)
 generator = generate_trials(params)
-model = B.Model(2, 50, 1, 800, 1, .8, .1, 128)
+model = B.Model(2, 50, 1, 800, 1, .8, .1, 128, generator.next()[2])
 sess = tf.Session()
 B.train(sess, model, generator, .001, 20000, 128, 10)
