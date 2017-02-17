@@ -2,9 +2,11 @@
 
 todo:
 
-masking of objective function (disregard certain times)
+initialization (fix spectral radius)
 
 connectivity masking
+
+flexible masking of objective function
 
 visualization
 
@@ -14,4 +16,4 @@ performance tests (scan function, etc.)
 
 regularization
 
-initialization (fix spectral radius)
+
