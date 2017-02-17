@@ -48,7 +48,7 @@ class Model(object):
             self.bout = tf.get_variable('bout', [n_out], initializer=tf.constant_initializer(0.0))
 
             self.predictions, self.states = self.compute_predictions()
-            self.loss = tf.losses.mean_squared_error(self.predictions, self.y)
+            self.loss = tf.losses.mean_squared_error(self.predictions, self.y, weights=self.output_mask)
 
     # implement one step of the RNN
     def rnn_step(self, rnn_in, state):
