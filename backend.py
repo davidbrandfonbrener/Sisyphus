@@ -31,7 +31,6 @@ class Model(object):
         # tensorflow initializations
         self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
         self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
-        #self.output_mask = tf.placeholder("int32", [batch_size, n_steps, 1])
         self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
 
         # trainable variables
@@ -55,7 +54,6 @@ class Model(object):
         new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(self.W), self.Dale_rec, name="in1"), transpose_b=True, name="1")
                                                      + tf.matmul(tf.abs(rnn_in),self.U, transpose_b=True, name="2") +
                                                      self.brec) + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
-        # Is this next line right????
         new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(tf.abs(self.Z), self.Dale_out, name="in2"), transpose_b=True, name="3") + self.bout
         return new_output, new_state
 
@@ -92,9 +90,10 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
             # Calculate batch loss
             loss = sess.run(model.loss, feed_dict={model.x: batch_x, model.y: batch_y})
             print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
-                  "{:.6f}".format(loss))
+                  "{:.6f}".format(loss / batch_size))
         step += 1
     print("Optimization Finished!")
+    print(model.W)
 
 
 # use a trained model to get test outputs

@@ -85,4 +85,4 @@ params = set_params(epochs=200, sample_size= 64, input_wait=50, stim_dur=50, qui
 generator = generate_trials(params)
 model = B.Model(2, 50, 1, 800, 1, .8, .1, 64, generator.next()[2])
 sess = tf.Session()
-B.train(sess, model, generator, .001, 20000, 64, 10)
+B.train(sess, model, generator, .001, 2000, 64, 10)
