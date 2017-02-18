@@ -2,11 +2,7 @@
 
 todo:
 
-initialization (fix spectral radius)
-
-connectivity masking
-
-flexible masking of objective function
+flexible connectivity masking
 
 visualization
 
