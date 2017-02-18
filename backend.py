@@ -39,10 +39,10 @@ class Model(object):
 
         # trainable variables
         with tf.variable_scope("model"):
-            self.U = tf.get_variable('U', [n_hidden, n_in], initializer=tf.random_normal_initializer())
+            self.U = tf.get_variable('U', [n_hidden, n_in], initializer=tf.random_normal_initializer(stddev=.01))
             self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.initial_W()))
             self.W = self.W * self.connect_mat
-            self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer())
+            self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))
             self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.dale_rec),
                                         trainable=False)
             self.Dale_out = tf.get_variable('Dale_out', [n_hidden, n_hidden],
@@ -83,7 +83,7 @@ class Model(object):
 
     #fix spectral radius of recurrent matrix
     def initial_W(self):
-        W = np.matmul(abs(np.random.normal(size=(self.n_hidden, self.n_hidden))), self.dale_rec)
+        W = np.matmul(abs(np.random.normal(scale=.01, size=(self.n_hidden, self.n_hidden))), self.dale_rec)
         W = W * self.connect_mat
         rho = max(abs(np.linalg.eigvals(W)))
         return (1.0/rho) * W
