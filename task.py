@@ -26,7 +26,7 @@ def set_params(nturns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
 # This generates the training data for our network
 # It will be a set of input_times and output_times for when we expect input
 # and when the corresponding output is expected
-def build_trials(params):
+def build_train_trials(params):
     nturns = params['nturns']
     input_wait = params['input_wait']
     quiet_gap = params['quiet_gap']
@@ -68,21 +68,17 @@ def build_trials(params):
     #note:#TODO im doing a quick fix
     mask = np.zeros((sample_size, seq_dur, 1))
     for sample in np.arange(sample_size):
-        mask[sample, :, 0] = [0 if x == .5 else 1 for x in y_train[sample, :, :]]
+        mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
+    mask = np.array(mask, dtype=float)
 
     x_train = x_train + stim_noise * np.random.randn(sample_size, seq_dur, 2)
     params['input_times'] = input_times
     params['output_times'] = output_times
     return x_train, y_train, mask
 
-def generate_trials(params):
+def generate_train_trials(params):
     while 1 > 0:
-        yield build_trials(params)
+        yield build_train_trials(params)
 
 
-params = set_params(epochs=200, sample_size= 64, input_wait=50, stim_dur=50, quiet_gap=100, nturns=5, N_rec=50, rec_noise=0.05,
-                        stim_noise=0.1, dale_ratio=.8, tau=100)
-generator = generate_trials(params)
-model = B.Model(2, 50, 1, 800, 1, .8, .1, 64, generator.next()[2])
-sess = tf.Session()
-B.train(sess, model, generator, .001, 10000, 64, 10)
+

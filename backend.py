@@ -6,14 +6,13 @@ import matplotlib.pyplot as plt
 
 
 class Model(object):
-    def __init__(self, n_in, n_hidden, n_out, n_steps, tau, dale_ratio, rec_noise, batch_size, output_mask):
+    def __init__(self, n_in, n_hidden, n_out, n_steps, tau, dale_ratio, rec_noise, batch_size):
         # network size
         self.n_in = n_in
         self.n_hidden = n_hidden
         self.n_out = n_out
         self.n_steps = n_steps
         self.batch_size = batch_size
-        self.output_mask = output_mask
 
         # neuro parameters
         self.tau = tau
@@ -29,19 +28,21 @@ class Model(object):
         self.dale_out = np.diag(dale_vec)
 
         #connectivity
-        connect_mat = np.ones((n_hidden, n_hidden)) - np.diag(np.ones(n_hidden))
+        self.connect_mat = np.ones((n_hidden, n_hidden)) - np.diag(np.ones(n_hidden))
 
         # tensorflow initializations
         self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
         self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
+        self.output_mask = tf.placeholder("float", [batch_size, n_steps, n_out])
+
         self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
 
         # trainable variables
         with tf.variable_scope("model"):
-            self.U = tf.get_variable('U', [n_hidden, n_in])
-            self.W = tf.get_variable('W', [n_hidden, n_hidden])
-            self.W = connect_mat * self.W
-            self.Z = tf.get_variable('Z', [n_out, n_hidden])
+            self.U = tf.get_variable('U', [n_hidden, n_in], initializer=tf.random_normal_initializer())
+            self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.initial_W()))
+            self.W = self.W * self.connect_mat
+            self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer())
             self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.dale_rec),
                                         trainable=False)
             self.Dale_out = tf.get_variable('Dale_out', [n_hidden, n_hidden],
@@ -80,6 +81,13 @@ class Model(object):
     def reg_loss(self):
         return tf.reduce_mean(tf.square(self.predictions - self.y))
 
+    #fix spectral radius of recurrent matrix
+    def initial_W(self):
+        W = np.matmul(abs(np.random.normal(size=(self.n_hidden, self.n_hidden))), self.dale_rec)
+        W = W * self.connect_mat
+        rho = max(abs(np.linalg.eigvals(W)))
+        return (1.0/rho) * W
+
 
 # train the model using Adam
 def train(sess, model, generator, learning_rate, training_iters, batch_size, display_step):
@@ -88,11 +96,11 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
     step = 1
     # Keep training until reach max iterations
     while step * batch_size < training_iters:
-        batch_x, batch_y, mask = generator.next()
-        sess.run(optimizer, feed_dict={model.x: batch_x, model.y: batch_y})
+        batch_x, batch_y, output_mask = generator.next()
+        sess.run(optimizer, feed_dict={model.x: batch_x, model.y: batch_y, model.output_mask: output_mask})
         if step % display_step == 0:
             # Calculate batch loss
-            loss = sess.run(model.loss, feed_dict={model.x: batch_x, model.y: batch_y})
+            loss = sess.run(model.loss, feed_dict={model.x: batch_x, model.y: batch_y, model.output_mask: output_mask})
             print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
                   "{:.6f}".format(loss / batch_size))
         step += 1
