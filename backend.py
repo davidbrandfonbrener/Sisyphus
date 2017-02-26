@@ -40,9 +40,9 @@ class Model(object):
         # trainable variables
         with tf.variable_scope("model"):
             self.U = tf.get_variable('U', [n_hidden, n_in], initializer=tf.random_normal_initializer(stddev=.01))
-            self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))#, initializer=tf.constant_initializer(self.initial_W()))
+            self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))#initializer=tf.constant_initializer(self.initial_W()))
             #self.W = self.connect_mat * self.W
-            self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer(stddev=.01)) #THIS CAUSES FUNNy STUFF
+            self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))
             self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden],
                                             initializer=tf.constant_initializer(self.dale_rec),
                                             trainable=False)
@@ -86,7 +86,7 @@ class Model(object):
     #fix spectral radius of recurrent matrix
     def initial_W(self):
         W = np.matmul(abs(np.random.normal(scale=.01, size=(self.n_hidden, self.n_hidden))), self.dale_rec)
-        W = W * self.connect_mat
+        #W = W * self.connect_mat
         rho = max(abs(np.linalg.eigvals(W)))
         return (1.1/rho) * W
 
@@ -107,8 +107,8 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
                   "{:.6f}".format(loss))
         step += 1
     print("Optimization Finished!")
-    #plt.imshow(np.matmul(abs(model.W.eval(session=sess)), model.dale_rec), interpolation="none")
-    #plt.show()
+    plt.imshow(np.matmul(abs(model.W.eval(session=sess)), model.dale_rec), interpolation="none")
+    plt.show()
     #plt.imshow(np.matmul(abs(model.Z.eval(session=sess)), model.dale_out), interpolation="none")
     #plt.show()
 
