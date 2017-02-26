@@ -33,16 +33,16 @@ class Model(object):
         # tensorflow initializations
         self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
         self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
-        #self.output_mask = tf.placeholder("float", [batch_size, n_steps, n_out])
+        self.output_mask = tf.placeholder("float", [batch_size, n_steps, n_out])
 
         self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
 
         # trainable variables
         with tf.variable_scope("model"):
-            self.U = tf.get_variable('U', [n_hidden, n_in])#, initializer=tf.random_normal_initializer(stddev=.01))
-            self.W = tf.get_variable('W', [n_hidden, n_hidden])#, initializer=tf.constant_initializer(self.initial_W()))
-            self.W = self.connect_mat * self.W
-            self.Z = tf.get_variable('Z', [n_out, n_hidden])#, initializer=tf.random_normal_initializer(stddev=.01))
+            self.U = tf.get_variable('U', [n_hidden, n_in], initializer=tf.random_normal_initializer(stddev=.01))
+            self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))#, initializer=tf.constant_initializer(self.initial_W()))
+            #self.W = self.connect_mat * self.W
+            self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer(stddev=.01)) #THIS CAUSES FUNNy STUFF
             self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden],
                                             initializer=tf.constant_initializer(self.dale_rec),
                                             trainable=False)
@@ -53,13 +53,14 @@ class Model(object):
             self.bout = tf.get_variable('bout', [n_out], initializer=tf.constant_initializer(0.0))
 
             self.predictions, self.states = self.compute_predictions()
-            self.loss = tf.losses.mean_squared_error(self.y, self.predictions)#, weights=self.output_mask)
+            self.loss = tf.losses.mean_squared_error(self.y, self.predictions, weights=self.output_mask)
 
     # implement one step of the RNN
+
     def rnn_step(self, rnn_in, state):
         new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(self.W), self.Dale_rec, name="in1"), transpose_b=True, name="1")
-                                                     + tf.matmul(tf.abs(rnn_in),self.U, transpose_b=True, name="2") +
-                                                     self.brec) + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
+                                                     + tf.matmul(rnn_in, tf.abs(self.U), transpose_b=True, name="2") + self.brec) + \
+                                                        tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
         new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(tf.abs(self.Z), self.Dale_out, name="in2"), transpose_b=True, name="3") + self.bout
         return new_output, new_state
 
@@ -98,18 +99,18 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
     # Keep training until reach max iterations
     while step * batch_size < training_iters:
         batch_x, batch_y, output_mask = generator.next()
-        sess.run(optimizer, feed_dict={model.x: batch_x, model.y: batch_y})
+        sess.run(optimizer, feed_dict={model.x: batch_x, model.y: batch_y, model.output_mask: output_mask})
         if step % display_step == 0:
             # Calculate batch loss
-            loss = sess.run(model.loss, feed_dict={model.x: batch_x, model.y: batch_y})
+            loss = sess.run(model.loss, feed_dict={model.x: batch_x, model.y: batch_y, model.output_mask: output_mask})
             print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
-                  "{:.6f}".format(loss / batch_size))
+                  "{:.6f}".format(loss))
         step += 1
     print("Optimization Finished!")
-    plt.imshow(np.matmul(abs(model.W.eval(session=sess)), model.dale_rec), interpolation="none")
-    plt.show()
-    plt.imshow(np.matmul(abs(model.Z.eval(session=sess)), model.dale_out), interpolation="none")
-    plt.show()
+    #plt.imshow(np.matmul(abs(model.W.eval(session=sess)), model.dale_rec), interpolation="none")
+    #plt.show()
+    #plt.imshow(np.matmul(abs(model.Z.eval(session=sess)), model.dale_out), interpolation="none")
+    #plt.show()
 
 
 # use a trained model to get test outputs
