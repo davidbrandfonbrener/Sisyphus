@@ -58,14 +58,10 @@ def build_train_trials(params):
     for sample in np.arange(sample_size):
         for turn in np.arange(nturns):
             firing_neuron = np.random.randint(2)  # 0 or 1
-            x_train[sample,
-            input_times[sample, turn]:(input_times[sample, turn] + stim_dur),
-            firing_neuron] = 1
-            y_train[sample,
-            output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]),
-            0] = firing_neuron
+            x_train[sample, input_times[sample, turn]:(input_times[sample, turn] + stim_dur), firing_neuron] = 1
+            y_train[sample, output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]), 0] = firing_neuron
 
-    #note:#TODO im doing a quick fix
+    #note:#TODO im doing a quick fix, only considering 1 ouput neuron
     mask = np.zeros((sample_size, seq_dur, 1))
     for sample in np.arange(sample_size):
         mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]

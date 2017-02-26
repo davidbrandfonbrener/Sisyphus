@@ -33,26 +33,27 @@ class Model(object):
         # tensorflow initializations
         self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
         self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
-        self.output_mask = tf.placeholder("float", [batch_size, n_steps, n_out])
+        #self.output_mask = tf.placeholder("float", [batch_size, n_steps, n_out])
 
         self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
 
         # trainable variables
         with tf.variable_scope("model"):
-            self.U = tf.get_variable('U', [n_hidden, n_in], initializer=tf.random_normal_initializer(stddev=.01))
-            self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.initial_W()))
-            self.W = self.W * self.connect_mat
-            self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))
-            self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.dale_rec),
-                                        trainable=False)
+            self.U = tf.get_variable('U', [n_hidden, n_in])#, initializer=tf.random_normal_initializer(stddev=.01))
+            self.W = tf.get_variable('W', [n_hidden, n_hidden])#, initializer=tf.constant_initializer(self.initial_W()))
+            self.W = self.connect_mat * self.W
+            self.Z = tf.get_variable('Z', [n_out, n_hidden])#, initializer=tf.random_normal_initializer(stddev=.01))
+            self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden],
+                                            initializer=tf.constant_initializer(self.dale_rec),
+                                            trainable=False)
             self.Dale_out = tf.get_variable('Dale_out', [n_hidden, n_hidden],
-                                              initializer=tf.constant_initializer(self.dale_out),
-                                              trainable=False)
+                                            initializer=tf.constant_initializer(self.dale_out),
+                                            trainable=False)
             self.brec = tf.get_variable('brec', [n_hidden], initializer=tf.constant_initializer(0.0))
             self.bout = tf.get_variable('bout', [n_out], initializer=tf.constant_initializer(0.0))
 
             self.predictions, self.states = self.compute_predictions()
-            self.loss = tf.losses.mean_squared_error(self.predictions, self.y, weights=self.output_mask)
+            self.loss = tf.losses.mean_squared_error(self.y, self.predictions)#, weights=self.output_mask)
 
     # implement one step of the RNN
     def rnn_step(self, rnn_in, state):
@@ -86,7 +87,7 @@ class Model(object):
         W = np.matmul(abs(np.random.normal(scale=.01, size=(self.n_hidden, self.n_hidden))), self.dale_rec)
         W = W * self.connect_mat
         rho = max(abs(np.linalg.eigvals(W)))
-        return (1.0/rho) * W
+        return (1.1/rho) * W
 
 
 # train the model using Adam
@@ -97,10 +98,10 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
     # Keep training until reach max iterations
     while step * batch_size < training_iters:
         batch_x, batch_y, output_mask = generator.next()
-        sess.run(optimizer, feed_dict={model.x: batch_x, model.y: batch_y, model.output_mask: output_mask})
+        sess.run(optimizer, feed_dict={model.x: batch_x, model.y: batch_y})
         if step % display_step == 0:
             # Calculate batch loss
-            loss = sess.run(model.loss, feed_dict={model.x: batch_x, model.y: batch_y, model.output_mask: output_mask})
+            loss = sess.run(model.loss, feed_dict={model.x: batch_x, model.y: batch_y})
             print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
                   "{:.6f}".format(loss / batch_size))
         step += 1
