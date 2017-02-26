@@ -46,6 +46,9 @@ class Model(object):
             self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden],
                                             initializer=tf.constant_initializer(self.dale_rec),
                                             trainable=False)
+            self.Connectivity = tf.get_variable('Connectivity', [n_hidden, n_hidden],
+                                            initializer=tf.constant_initializer(self.connect_mat),
+                                            trainable=False)
             self.Dale_out = tf.get_variable('Dale_out', [n_hidden, n_hidden],
                                             initializer=tf.constant_initializer(self.dale_out),
                                             trainable=False)
@@ -58,7 +61,9 @@ class Model(object):
     # implement one step of the RNN
 
     def rnn_step(self, rnn_in, state):
-        new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state), tf.matmul(tf.abs(self.W), self.Dale_rec, name="in1"), transpose_b=True, name="1")
+        new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state),
+                                                               tf.matmul(tf.abs(self.W) * self.Connectivity, self.Dale_rec, name="in1"),
+                                                               transpose_b=True, name="1")
                                                      + tf.matmul(rnn_in, tf.abs(self.U), transpose_b=True, name="2") + self.brec) + \
                                                         tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
         new_output = tf.matmul(tf.nn.relu(new_state), tf.matmul(tf.abs(self.Z), self.Dale_out, name="in2"), transpose_b=True, name="3") + self.bout
