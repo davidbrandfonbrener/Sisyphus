@@ -15,8 +15,9 @@ class Model(object):
         self.batch_size = batch_size
 
         # neuro parameters
+        self.dt = 1.0
         self.tau = tau
-        self.alpha = 1.0 - tau
+        self.alpha = self.dt / self.tau
         self.dale_ratio = dale_ratio
         self.rec_noise = rec_noise
 
@@ -60,7 +61,7 @@ class Model(object):
     # implement one step of the RNN
 
     def rnn_step(self, rnn_in, state):
-        new_state = state * self.tau + self.alpha * (tf.matmul(tf.nn.relu(state),
+        new_state = state * (1-self.alpha) + self.alpha * (tf.matmul(tf.nn.relu(state),
                                                                tf.matmul(tf.abs(self.W) * self.Connectivity, self.Dale_rec, name="in1"),
                                                                transpose_b=True, name="1")
                                                      + tf.matmul(rnn_in, tf.abs(self.U), transpose_b=True, name="2") + self.brec) + \
@@ -117,7 +118,12 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
 
 
 # use a trained model to get test outputs
-def test(self):
+def test(sess, model, input):
+    preds = sess.run(model.predictions, feed_dict={model.x: input})
+    return preds
+
+#visualize network output on a trial, compared to desired output
+def visualize_trial(sess, model, input, desired_output):
+    preds = test(sess, model, input)
+    plt.plot()
     return
-
-
