@@ -2,7 +2,7 @@
 
 todo:
 
-flexible connectivity masking
+initializations
 
 visualization
 
