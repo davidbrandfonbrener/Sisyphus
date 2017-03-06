@@ -15,7 +15,7 @@ class Model(object):
         self.batch_size = batch_size
 
         # neuro parameters
-        self.dt = 1.0
+        self.dt = 0.1
         self.tau = tau
         self.alpha = self.dt / self.tau
         self.dale_ratio = dale_ratio
