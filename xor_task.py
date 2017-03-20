@@ -45,7 +45,10 @@ def build_train_trials(params):
     seq_dur = input_wait + stim_dur + mem_gap + stim_dur + out_dur
 
     input_pattern = np.random.randint(2,size=(sample_size,2))
-    output_pattern = (np.sum(input_pattern,1) == 1).astype('float')
+    #output_pattern = (np.sum(input_pattern,1) >= 1).astype('float') #or
+    #output_pattern = (np.sum(input_pattern,1) >= 2).astype('float') #and
+    output_pattern = (np.sum(input_pattern,1) == 1).astype('float') #xor
+    #output_pattern = input_pattern[:,0]                             #memory saccade with distractor
 
     input_times = np.zeros([sample_size, n_in], dtype=np.int)
     output_times = np.zeros([sample_size, 1], dtype=np.int)
@@ -64,10 +67,10 @@ def build_train_trials(params):
         y_train[sample,out_period,0] = output_pattern[sample]
 
     #note:#TODO im doing a quick fix, only considering 1 ouput neuron
-    mask = np.zeros((sample_size, seq_dur, 1))
-    for sample in np.arange(sample_size):
-        mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
-    mask = np.array(mask, dtype=float)
+    mask = np.ones((sample_size, seq_dur, 1))
+    #for sample in np.arange(sample_size):
+    #    mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
+    #mask = np.array(mask, dtype=float)
 
     x_train = x_train + stim_noise * np.random.randn(sample_size, seq_dur, 2)
     params['input_times'] = input_times
@@ -83,31 +86,38 @@ if __name__ == "__main__":
     
     #model params
     n_in = 2 
-    n_hidden = 50 
+    n_hidden = 100 
     n_out = 1
-    n_steps = 300 
-    tau = 1
-    dale_ratio = .8 
-    rec_noise = .1
-    batch_size = 64
+    n_steps = 80 
+    tau = 100.0 #As double
+    dt = 20.0  #As double
+    dale_ratio = 0
+    rec_noise = 0.00001
+    stim_noise = 0.2
+    batch_size = 128
     
     #train params
-    learning_rate = .001 
-    training_iters = 50000 
-    display_step = 10
+    learning_rate = .01 
+    training_iters = 200000
+    display_step = 50
     
-    params = set_params(epochs=200, sample_size= 64, input_wait=50, stim_dur=50, mem_gap=100, out_dur=50, N_rec=50, 
-                        rec_noise=0.05, stim_noise=0.1, dale_ratio=.8, tau=100)
+    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden, 
+                        rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau)
     generator = generate_train_trials(params)
-    model = B.Model(n_in, n_hidden, n_out, n_steps, tau, dale_ratio, rec_noise, batch_size)
+    model = B.Model(n_in, n_hidden, n_out, n_steps, tau, dt, dale_ratio, rec_noise, batch_size)
     sess = tf.Session()
     
     
     
-    B.train(sess, model, generator, learning_rate, training_iters, batch_size, display_step)
+    B.train(sess, model, generator, learning_rate, training_iters, batch_size, display_step,dale_ratio)
 
-    input = generator.next()[0]
-    output = B.test(sess, model, input)
+    input,target,m = generator.next()
+    output,states = B.test(sess, model, input)
+    W = model.W.eval(session=sess)
+    U = model.U.eval(session=sess)
+    Z = model.Z.eval(session=sess)
+    brec = model.brec.eval(session=sess)
+    bout = model.bout.eval(session=sess)
     
     sess.close()
 
