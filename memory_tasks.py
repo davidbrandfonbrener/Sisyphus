@@ -6,13 +6,13 @@ import backend as B
 
 def set_params(n_in = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, out_dur=5,
                     var_delay_length = 0, stim_noise = 0, rec_noise = .1,
-                    sample_size = 128, epochs = 100, N_rec = 50, dale_ratio=0.8, tau=100):
+                    sample_size = 128, epochs = 100, N_rec = 50, dale_ratio=0.8, tau=100,task='xor'):
     params = dict()
-    params['n_in']          = n_in
+    params['n_in']             = n_in
     params['input_wait']       = input_wait
-    params['mem_gap']        = mem_gap
+    params['mem_gap']          = mem_gap
     params['stim_dur']         = stim_dur
-    params['out_dur']           = out_dur
+    params['out_dur']          = out_dur
     params['var_delay_length'] = var_delay_length
     params['stim_noise']       = stim_noise
     params['rec_noise']        = rec_noise
@@ -20,7 +20,8 @@ def set_params(n_in = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, out_dur=5,
     params['epochs']           = epochs
     params['N_rec']            = N_rec
     params['dale_ratio']       = dale_ratio
-    params['tau'] = tau
+    params['tau']              = tau
+    params['task']             = task
 
     return params
 
@@ -36,6 +37,7 @@ def build_train_trials(params):
     var_delay_length = params['var_delay_length']
     stim_noise = params['stim_noise']
     sample_size = int(params['sample_size'])
+    task = params['task']
 
     if var_delay_length == 0:
         var_delay = np.zeros(sample_size, dtype=int)
@@ -45,10 +47,14 @@ def build_train_trials(params):
     seq_dur = input_wait + stim_dur + mem_gap + stim_dur + out_dur
 
     input_pattern = np.random.randint(2,size=(sample_size,2))
-    #output_pattern = (np.sum(input_pattern,1) >= 1).astype('float') #or
-    #output_pattern = (np.sum(input_pattern,1) >= 2).astype('float') #and
-    output_pattern = (np.sum(input_pattern,1) == 1).astype('float') #xor
-    #output_pattern = input_pattern[:,0]                             #memory saccade with distractor
+    if task == 'xor':
+        output_pattern = (np.sum(input_pattern,1) == 1).astype('float') #xor
+    elif task == 'or':
+        output_pattern = (np.sum(input_pattern,1) >= 1).astype('float') #or
+    elif task == 'and':
+        output_pattern = (np.sum(input_pattern,1) >= 2).astype('float') #and
+    elif task == 'memory_saccade':
+        output_pattern = input_pattern[:,0]                             #memory saccade with distractor
 
     input_times = np.zeros([sample_size, n_in], dtype=np.int)
     output_times = np.zeros([sample_size, 1], dtype=np.int)
@@ -102,7 +108,7 @@ if __name__ == "__main__":
     display_step = 50
     
     params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden, 
-                        rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau)
+                        rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
     model = B.Model(n_in, n_hidden, n_out, n_steps, tau, dt, dale_ratio, rec_noise, batch_size)
     sess = tf.Session()
