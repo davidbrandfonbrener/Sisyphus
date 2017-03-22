@@ -15,7 +15,7 @@ class Model(object):
         self.batch_size = batch_size
 
         # neuro parameters
-        self.dt = 1.0
+        self.dt = .1
         self.tau = tau
         self.alpha = self.dt / self.tau
         self.dale_ratio = dale_ratio
@@ -41,7 +41,7 @@ class Model(object):
         # trainable variables
         with tf.variable_scope("model"):
             self.U = tf.get_variable('U', [n_hidden, n_in], initializer=tf.random_normal_initializer(stddev=.01))
-            self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))#initializer=tf.constant_initializer(self.initial_W()))
+            self.W = tf.get_variable('W', [n_hidden, n_hidden], initializer=tf.constant_initializer(self.initial_W()))
             self.Z = tf.get_variable('Z', [n_out, n_hidden], initializer=tf.random_normal_initializer(stddev=.01))
             self.Dale_rec = tf.get_variable('Dale_rec', [n_hidden, n_hidden],
                                             initializer=tf.constant_initializer(self.dale_rec),
@@ -90,7 +90,12 @@ class Model(object):
 
     #fix spectral radius of recurrent matrix
     def initial_W(self):
+        dale_scale = np.ones(50) * 1/.8;
+        dale_scale[int(.8 * 50):] = 1/.2
+        dale_scale = np.diag(dale_scale)
+
         W = np.matmul(abs(np.random.normal(scale=.01, size=(self.n_hidden, self.n_hidden))), self.dale_rec)
+        W = np.matmul(W, dale_scale)
         rho = max(abs(np.linalg.eigvals(W)))
         return (1.1/rho) * W
 
@@ -112,6 +117,7 @@ def train(sess, model, generator, learning_rate, training_iters, batch_size, dis
         step += 1
     print("Optimization Finished!")
     plt.imshow(np.matmul(abs(model.W.eval(session=sess)), model.dale_rec), interpolation="none")
+    plt.colorbar()
     plt.show()
     #plt.imshow(np.matmul(abs(model.Z.eval(session=sess)), model.dale_out), interpolation="none")
     #plt.show()
