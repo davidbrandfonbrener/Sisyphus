@@ -90,8 +90,8 @@ class Model(object):
 
     #fix spectral radius of recurrent matrix
     def initial_W(self):
-        dale_scale = np.ones(50) * 1/.8;
-        dale_scale[int(.8 * 50):] = 1/.2
+        dale_scale = np.ones(self.n_hidden) * 1/self.dale_ratio
+        dale_scale[int(self.dale_ratio * self.n_hidden):] = 1/(1 - self.dale_ratio)
         dale_scale = np.diag(dale_scale)
 
         W = np.matmul(abs(np.random.normal(scale=.01, size=(self.n_hidden, self.n_hidden))), self.dale_rec)
