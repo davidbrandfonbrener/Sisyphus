@@ -2,8 +2,6 @@
 
 todo:
 
-initializations
-
 visualization
 
 saving trained networks
