@@ -32,11 +32,9 @@ class Model(object):
         self.connect_mat = np.ones((n_hidden, n_hidden)) - np.diag(np.ones(n_hidden))
 
         # tensorflow initializations
-        self.x = tf.placeholder("float", [batch_size, n_steps, n_in])
-        self.y = tf.placeholder("float", [batch_size, n_steps, n_out])
-        self.output_mask = tf.placeholder("float", [batch_size, n_steps, n_out])
-
-        self.init_state = tf.random_normal([batch_size, n_hidden], mean=0.0, stddev=rec_noise)
+        self.x = tf.placeholder("float", [None, n_steps, n_in])
+        self.y = tf.placeholder("float", [None, n_steps, n_out])
+        self.output_mask = tf.placeholder("float", [None, n_steps, n_out])
 
         # trainable variables
         with tf.variable_scope("model"):
@@ -73,6 +71,7 @@ class Model(object):
     def compute_predictions(self):
         rnn_inputs = tf.unstack(self.x, axis=1)
 
+        self.init_state = tf.random_normal([self.batch_size, self.n_hidden], mean=0.0, stddev=self.rec_noise)
         state = self.init_state
         rnn_outputs = []
         rnn_states = []
@@ -90,8 +89,8 @@ class Model(object):
 
     #fix spectral radius of recurrent matrix
     def initial_W(self):
-        dale_scale = np.ones(self.n_hidden) * 1/self.dale_ratio
-        dale_scale[int(self.dale_ratio * self.n_hidden):] = 1/(1 - self.dale_ratio)
+        dale_scale = np.ones(self.n_hidden) * 1.0/self.dale_ratio
+        dale_scale[int(self.dale_ratio * self.n_hidden):] = 1.0/(1.0 - self.dale_ratio)
         dale_scale = np.diag(dale_scale)
 
         W = np.matmul(abs(np.random.normal(scale=.01, size=(self.n_hidden, self.n_hidden))), self.dale_rec)
@@ -129,7 +128,9 @@ def test(sess, model, input):
     return preds
 
 #visualize network output on a trial, compared to desired output
-def visualize_trial(sess, model, input, desired_output):
-    preds = test(sess, model, input)
-    plt.plot()
+def visualize_2_input_one_output_trial(sess, model, data):
+    preds = test(sess, model, data[0])
+    length = data[0].shape[1]
+    plt.plot(range(length), data[1][0, :,0], 'r', range(length), preds[0, :,0], 'g')
+    plt.show()
     return
