@@ -7,7 +7,7 @@ params = task.set_params(epochs=200, sample_size= 64, input_wait=50, stim_dur=50
 generator = task.generate_train_trials(params)
 model = B.Model(2, 50, 1, 800, .9, .8, .1, 64)
 sess = tf.Session()
-B.train(sess, model, generator, .001, 2000, 64, 10)
+B.train(sess, model, generator, .001, 20000, 64, 10)
 
-input = generator.next()[0]
-output = B.test(sess, model, input)
+data = generator.next()
+B.visualize_2_input_one_output_trial(sess, model, data)
