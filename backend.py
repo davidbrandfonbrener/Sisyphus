@@ -102,7 +102,7 @@ class Model(object):
 
     # regularized loss function
     def reg_loss(self):
-        return tf.reduce_mean(tf.square(self.predictions - self.y))# + tf.reduce_mean(tf.square(self.states))
+        return tf.reduce_mean(tf.square(self.output_mask * (self.predictions - self.y)))# + tf.reduce_mean(tf.square(self.states))
 
     #fix spectral radius of recurrent matrix
     def initial_W(self):
@@ -131,7 +131,7 @@ class Model(object):
 
 
 # train the model using Adam
-def train(sess, model, generator, learning_rate, training_iters, batch_size, display_step,dale):
+def train(sess, model, generator, learning_rate, training_iters, batch_size, display_step, dale):
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(model.loss,var_list=[model.W,model.U,model.Z,model.brec,model.bout,model.init_state])
     sess.run(tf.global_variables_initializer())
     step = 1
@@ -163,7 +163,7 @@ def test(sess, model, input):
 
 #visualize network output on a trial, compared to desired output
 def visualize_2_input_one_output_trial(sess, model, data):
-    preds = test(sess, model, data[0])
+    preds = test(sess, model, data[0])[0]
     length = data[0].shape[1]
     plt.plot(range(length), data[1][0, :,0], 'r', range(length), preds[0, :,0], 'g')
     plt.show()
