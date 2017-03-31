@@ -162,7 +162,9 @@ def test(sess, model, input):
     return preds,states
 
 #visualize network output on a trial, compared to desired output
-def visualize_trial(sess, model, input, desired_output):
-    preds,states = test(sess, model, input)
-    plt.plot()
+def visualize_2_input_one_output_trial(sess, model, data):
+    preds = test(sess, model, data[0])
+    length = data[0].shape[1]
+    plt.plot(range(length), data[1][0, :,0], 'r', range(length), preds[0, :,0], 'g')
+    plt.show()
     return
