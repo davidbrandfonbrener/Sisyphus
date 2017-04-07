@@ -304,7 +304,7 @@ class Model(object):
             saver = tf.train.Saver()
             save_path = saver.save(sess, weights_path)
             print("Model saved in file: %s" % save_path)
-            
+
 
     # use a trained model to get test outputs
     def test(self, sess, rnn_in, weights_path = None):
