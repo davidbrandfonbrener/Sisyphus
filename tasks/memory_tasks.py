@@ -1,14 +1,16 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-import backend as B
+from backend.networks import Model
+import backend.visualizations as V
 
 
+# Builds a dictionary of parameters that specifies the information
+# about an instance of this specific task
 def set_params(n_in = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, out_dur=5,
                     var_delay_length = 0, stim_noise = 0, rec_noise = .1,
                     sample_size = 128, epochs = 100, N_rec = 50, dale_ratio=0.8, tau=100,task='xor'):
     params = dict()
-    params['n_in']             = n_in
+    params['N_in']             = n_in
     params['input_wait']       = input_wait
     params['mem_gap']          = mem_gap
     params['stim_dur']         = stim_dur
@@ -29,7 +31,7 @@ def set_params(n_in = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, out_dur=5,
 # It will be a set of input_times and output_times for when we expect input
 # and when the corresponding output is expected
 def build_train_trials(params):
-    n_in = params['n_in']
+    n_in = params['N_in']
     input_wait = params['input_wait']
     mem_gap = params['mem_gap']
     stim_dur = params['stim_dur']
@@ -110,20 +112,20 @@ if __name__ == "__main__":
     params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden, 
                         rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
-    model = B.Model(n_in, n_hidden, n_out, n_steps, tau, dt, dale_ratio, rec_noise, batch_size)
+    model = Model(n_in, n_hidden, n_out, n_steps, tau, dt, dale_ratio, rec_noise, batch_size)
     sess = tf.Session()
     
     
     
-    B.train(sess, model, generator, learning_rate, training_iters, batch_size, display_step,dale_ratio)
+    model.train(sess, generator, learning_rate, training_iters, batch_size, display_step, dale_ratio)
 
     input,target,m = generator.next()
-    output,states = B.test(sess, model, input)
-    W = model.W.eval(session=sess)
-    U = model.U.eval(session=sess)
-    Z = model.Z.eval(session=sess)
-    brec = model.brec.eval(session=sess)
-    bout = model.bout.eval(session=sess)
+    output,states = model.test(sess, model, input)
+    W = model.W_rec.eval(session=sess)
+    U = model.W_in.eval(session=sess)
+    Z = model.W_out.eval(session=sess)
+    brec = model.b_rec.eval(session=sess)
+    bout = model.b_out.eval(session=sess)
     
     sess.close()
 

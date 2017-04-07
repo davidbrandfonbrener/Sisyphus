@@ -1,9 +1,11 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-import backend as B
+from backend.networks import Model
+import backend.visualizations as V
 
 
+# Builds a dictionary of parameters that specifies the information
+# about an instance of this specific task
 def set_params(nturns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
                     var_delay_length = 0, stim_noise = 0, rec_noise = .1,
                     sample_size = 128, epochs = 100, N_rec = 50, dale_ratio=0.8, tau=100):
@@ -72,9 +74,23 @@ def build_train_trials(params):
     params['output_times'] = output_times
     return x_train, y_train, mask
 
+
 def generate_train_trials(params):
     while 1 > 0:
         yield build_train_trials(params)
 
+params = set_params(epochs=200, sample_size= 64,
+                    input_wait=5, stim_dur=5, quiet_gap=10, nturns=5,
+                    N_rec=50, rec_noise=0.05, stim_noise=0.1,
+                    dale_ratio=.8, tau=100)
 
+generator = generate_train_trials(params)
+model = Model(N_in=2, N_rec=50, N_out=1, N_steps=80, N_batches=64,
+              tau=0.9, dt=0.1, dale_ratio=.8, rec_noise=0.1)
 
+configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
+sess = tf.Session(config=configuration)
+model.train(sess, generator, training_iters=80000)
+
+data = generator.next()
+V.visualize_2_input_one_output_trial(model, sess, data)
