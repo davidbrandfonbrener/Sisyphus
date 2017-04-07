@@ -106,7 +106,7 @@ class Model(object):
             # ------------------------------------------------
             # Network loss
             # ------------------------------------------------
-            self.predictions, self.states = self.compute_predictions()
+            self.predictions, self.states = self.compute_predictions_scan()
             self.loss = self.reg_loss()
 
     # regularized loss function
@@ -165,7 +165,7 @@ class Model(object):
             
         return new_output, new_state
 
-    def rnn_step_scan(self, rnn_in, state):
+    def rnn_step_scan(self, state, rnn_in):
 
         if self.dale_ratio:
             new_state = (1-self.alpha) * state \
@@ -180,10 +180,10 @@ class Model(object):
                                 rnn_in,
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
-                            + self.b_rec)\
+                            + self.b_rec) \
                         + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
         else:
-            new_state = ((1 - self.alpha) * state)\
+            new_state = ((1 - self.alpha) * state) \
                         + self.alpha * (
                             tf.matmul(
                                 tf.nn.relu(state),
@@ -193,7 +193,7 @@ class Model(object):
                                 rnn_in,
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
-                            + self.b_rec)\
+                            + self.b_rec) \
                         + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
 
         return new_state
@@ -230,12 +230,12 @@ class Model(object):
 
     def compute_predictions_scan(self):
 
-        rnn_inputs = tf.unstack(self.x, axis=1)
+        #rnn_inputs = tf.unstack(self.x, axis=1)
         state = self.init_state
         rnn_states = \
             tf.scan(
                 self.rnn_step_scan,
-                rnn_inputs,
+                tf.transpose(self.x, [1, 0, 2]),
                 initializer=state,
                 parallel_iterations=1)
         rnn_outputs = \
