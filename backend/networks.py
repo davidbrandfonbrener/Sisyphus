@@ -274,7 +274,7 @@ class Model(object):
     # train the model using Adam
     def train(self, sess, generator,
               learning_rate=.001, training_iters=50000,
-              batch_size=64, display_step=10):
+              batch_size=64, display_step=10, weights_path= None):
 
         var_list = [self.W_rec, self.W_in, self.W_out,
                     self.b_rec, self.b_out,
@@ -299,9 +299,23 @@ class Model(object):
             step += 1
         print("Optimization Finished!")
 
+        #save weights
+        if weights_path:
+            saver = tf.train.Saver()
+            save_path = saver.save(sess, weights_path)
+            print("Model saved in file: %s" % save_path)
+            
+
     # use a trained model to get test outputs
-    def test(self, sess, rnn_in):
-        predictions, states = sess.run([self.predictions, self.states], feed_dict={self.x: rnn_in})
+    def test(self, sess, rnn_in, weights_path = None):
+        if(weights_path):
+            saver = tf.train.Saver()
+            # Restore variables from disk.
+            saver.restore(sess, weights_path)
+            predictions, states = sess.run([self.predictions, self.states], feed_dict={self.x: rnn_in})
+        else:
+            predictions, states = sess.run([self.predictions, self.states], feed_dict={self.x: rnn_in})
+
         return predictions, states
 
 
