@@ -3,15 +3,18 @@ import tensorflow as tf
 from backend.networks import Model
 import backend.visualizations as V
 
+# flip_flop task
 
 # Builds a dictionary of parameters that specifies the information
 # about an instance of this specific task
-def set_params(N_rec = 50,
+def set_params(Name = "flip_flop", N_rec = 50,
                 nturns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
                var_delay_length = 0, stim_noise = 0.1, rec_noise = .1,
-               N_batch = 128, dale_ratio=0.8, dt=0.1, tau=0.9):
+               N_batch = 128, dale_ratio=0.8, dt = 10, tau = 100):
 
     params = dict()
+
+    params['Name'] = Name
     params['N_in'] = 2
     params['N_rec'] = N_rec
     params['N_out'] = 1
@@ -35,7 +38,7 @@ def set_params(N_rec = 50,
 # This generates the training data for our network
 # It will be a set of input_times and output_times for when we expect input
 # and when the corresponding output is expected
-def build_train_trial(params):
+def build_train_batch(params):
     N_in = params['N_in']
     N_out = params['N_out']
     N_batch = params['N_batch']
@@ -90,7 +93,7 @@ def build_train_trial(params):
 
 def generate_train_trials(params):
     while 1 > 0:
-        yield build_train_trial(params)
+        yield build_train_batch(params)
 
 params = set_params(N_batch= 64,
                     input_wait=5, stim_dur=5, quiet_gap=10, nturns=5,
@@ -106,4 +109,5 @@ model.train(sess, generator, training_iters=10000, learning_rate=.01, weights_pa
 
 data = generator.next()
 V.visualize_2_input_one_output_trial(model, sess, data)
+
 V.show_W_rec(model, sess)

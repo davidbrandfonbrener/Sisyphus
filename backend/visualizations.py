@@ -7,8 +7,10 @@ import numpy as np
 def visualize_2_input_one_output_trial(model, sess, data):
     preds = model.test(sess, data[0])[0]
     length = data[0].shape[1]
-    plt.plot(range(length), data[0][0, :, 0], 'b', data[1][0, :, 0], 'r', range(length), preds[0, :, 0], 'g')
+    plt.plot(range(length), data[0][0, :, 0], 'b', data[1][0, :, 0], 'r', range(length), preds[0, :, 0], 'g')#
+    # , cmap='seismic')
     plt.show()
+
 
 def show_W_rec(model, sess):
     if model.dale_ratio:
@@ -17,6 +19,16 @@ def show_W_rec(model, sess):
         plt.pcolor(model.W_rec.eval(session=sess))
     plt.colorbar()
     plt.show()
+
+
+def show_W_in(model, sess):
+    if model.dale_ratio:
+        plt.pcolor(np.matmul(abs(model.W_in.eval(session=sess)), model.dale_out))
+    else:
+        plt.pcolor(model.W_in.eval(session=sess))
+    plt.colorbar()
+    plt.show()
+
 
 def show_W_out(model, sess):
     if model.dale_ratio:

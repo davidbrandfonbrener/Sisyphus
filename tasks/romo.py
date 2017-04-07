@@ -3,19 +3,20 @@ import tensorflow as tf
 from backend.networks import Model
 import backend.visualizations as V
 
+# Romo task, as in pycog
+
 # Builds a dictionary of parameters that specifies the information
 # about an instance of this specific task
-def set_params(N_rec = 500,
+def set_params(Name = "romo", N_rec = 500,
                fixation = 25, stim_1 = 25, delay = 150, stim_2 = 25, decision=15,
                var_fix_length = 0, var_stim_length = 0,
                stim_noise = 0.1, rec_noise = 0.1,
-               dale_ratio=0.8, dt=0.1, tau=0.9,
+               dale_ratio=0.8, dt = 10, tau = 100,
                N_batch=64):
 
     params = dict()
 
-    params = dict()
-    params['N_in'] = 2
+    params['Name'] = Name
     params['N_rec'] = N_rec
     params['N_out'] = 2
     params['N_steps'] = fixation + var_fix_length + stim_1 + stim_2 + 2*var_stim_length + decision
@@ -39,13 +40,16 @@ def set_params(N_rec = 500,
 
     return params
 
+
 def scale_p(f):
     return 0.4 + 0.8*(f - 10)/(34 - 10)
+
 
 def scale_n(f):
     return 0.4 + 0.8*(34 - f)/(34 - 10)
 
-def build_train_trial(params):
+
+def build_train_batch(params):
     N_in = params['N_in']
     N_out = params['N_out']
     N_batch = params['N_batch']
@@ -111,7 +115,7 @@ def build_train_trial(params):
 
 def generate_train_trials(params):
     while 1 > 0:
-        yield build_train_trial(params)
+        yield build_train_batch(params)
 
 params = set_params()
 
@@ -120,4 +124,6 @@ model = Model(params)
 
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
 sess = tf.Session(config=configuration)
-model.train(sess, generator, training_iters=80000)
+model.train(sess, generator, training_iters=10000)
+
+V.show_W_rec(model, sess)

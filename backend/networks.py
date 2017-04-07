@@ -133,14 +133,14 @@ class Model(object):
                         + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
 
             new_output = \
-                tf.matmul(
-                    tf.nn.relu(new_state),
-                    tf.matmul(
-                        tf.abs(self.W_out),
-                        self.Dale_out,
-                        name="in_2"),
-                    transpose_b=True, name="3")\
-                + self.b_out
+                        tf.matmul(
+                            tf.nn.relu(new_state),
+                            tf.matmul(
+                                tf.abs(self.W_out),
+                                self.Dale_out,
+                                name="in_2"),
+                            transpose_b=True, name="3")\
+                        + self.b_out
 
         else:
             new_state = ((1-self.alpha) * state) \
@@ -268,7 +268,9 @@ class Model(object):
         else:
             W = w0
             
-        rho = max(abs(np.linalg.eigvals(W)))#+np.diag(np.ones(self.N_rec)*(1-self.alpha))))) #add diagnal matrix 1-alpha to account for persistance tau
+        rho = max(abs(np.linalg.eigvals(W)))
+        # +np.diag(np.ones(self.N_rec)*(1-self.alpha)))))
+        # add diagnal matrix 1-alpha to account for persistance tau
         return (1.1/rho) * W  # - .9*np.diag(np.ones(self.N_rec)*(1-self.alpha)) #correct for tau
 
     # train the model using Adam
@@ -317,6 +319,4 @@ class Model(object):
             predictions, states = sess.run([self.predictions, self.states], feed_dict={self.x: rnn_in})
 
         return predictions, states
-
-
 

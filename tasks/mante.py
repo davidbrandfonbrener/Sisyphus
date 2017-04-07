@@ -3,18 +3,20 @@ import tensorflow as tf
 from backend.networks import Model
 import backend.visualizations as V
 
+# Mante task, as in pycog
+
 # Builds a dictionary of parameters that specifies the information
 # about an instance of this specific task
-def set_params(N_rec = 150,
+def set_params(Name = "mante", N_rec = 150,
                fixation = 20, stimulus = 40, decision=15,
                var_fix_length = 0, var_stim_length = 0,
                stim_noise = 0.1, rec_noise = 0.1,
-               dale_ratio=0.8, dt=0.1, tau=0.9,
+               dale_ratio=0.8, dt = 10, tau = 100,
                N_batch=64):
 
     params = dict()
 
-    params = dict()
+    params['Name'] = Name
     params['N_in'] = 6
     params['N_rec'] = N_rec
     params['N_out'] = 2
@@ -36,10 +38,12 @@ def set_params(N_rec = 150,
 
     return params
 
+
 def scale(coherence, SCALE=5):
     return (1 + SCALE*coherence/100)/2
 
-def build_train_trial(params):
+
+def build_train_batch(params):
     N_in     = params['N_in']
     N_out    = params['N_out']
     N_batch = params['N_batch']
@@ -111,9 +115,10 @@ def build_train_trial(params):
 
     return x_train, y_train, mask
 
+
 def generate_train_trials(params):
     while 1 > 0:
-        yield build_train_trial(params)
+        yield build_train_batch(params)
 
 params = set_params()
 
@@ -123,3 +128,5 @@ model = Model(params)
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
 sess = tf.Session(config=configuration)
 model.train(sess, generator, training_iters=80000)
+
+V.show_W_rec(model, sess)
