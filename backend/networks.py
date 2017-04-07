@@ -13,23 +13,21 @@ import numpy as np
 
 
 class Model(object):
-    def __init__(self, N_in=2, N_rec=50, N_out=1, N_steps=100, N_batches=64,
-                 tau=0.9, dt=0.1, dale_ratio=0.8, rec_noise=0.1,
-                 autapse=True):
+    def __init__(self, params, autapse=True):
 
         # Network sizes (tensor dimensions)
-        self.N_in = N_in
-        self.N_rec = N_rec
-        self.N_out = N_out
-        self.N_steps = N_steps
-        self.batch_size = N_batches
+        N_in    = self.N_in       = params['N_in']
+        N_rec   = self.N_rec      = params['N_rec']
+        N_out   = self.N_out      = params['N_out']
+        N_steps = self.N_steps    = params['N_steps']
+        N_batch = self.batch_size = params['N_batch']
 
         # Physical parameters
-        self.dt = dt
-        self.tau = tau
-        self.alpha = self.dt / self.tau
-        self.dale_ratio = dale_ratio
-        self.rec_noise = rec_noise
+        self.dt = params['dt']
+        self.tau = params['tau']
+        self.alpha = params['alpha']
+        self.dale_ratio = params['dale_ratio']
+        self.rec_noise  = params['rec_noise']
 
         # Dale matrix
         dale_vec = np.ones(N_rec)
@@ -44,18 +42,19 @@ class Model(object):
 
         # Connectivity
         self.connect_mat = np.ones((N_rec, N_rec))
+        autapse = self.autapse = params.get('autapse', True)
         if not autapse:
             self.connect_mat -= np.diag(np.ones(N_rec))
 
         # Tensorflow initializations
-        self.x = tf.placeholder("float", [N_batches, N_steps, N_in])
-        self.y = tf.placeholder("float", [N_batches, N_steps, N_out])
-        self.output_mask = tf.placeholder("float", [N_batches, N_steps, N_out])
+        self.x = tf.placeholder("float", [N_batch, N_steps, N_in])
+        self.y = tf.placeholder("float", [N_batch, N_steps, N_out])
+        self.output_mask = tf.placeholder("float", [N_batch, N_steps, N_out])
 
         # trainable variables
         with tf.variable_scope("model"):
             
-            self.init_state = tf.get_variable('init_state', [N_batches, N_rec],
+            self.init_state = tf.get_variable('init_state', [N_batch, N_rec],
                                               initializer=tf.random_normal_initializer(mean=0.1, stddev=0.01))
 
             # ------------------------------------------------
