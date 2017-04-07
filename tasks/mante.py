@@ -122,4 +122,6 @@ model = Model(params)
 
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
 sess = tf.Session(config=configuration)
-model.train(sess, generator, training_iters=80000)
+model.train(sess, generator, training_iters=50000, learning_rate=.01)
+
+V.show_W_rec(model=model, sess=sess)

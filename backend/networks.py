@@ -130,7 +130,7 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec)\
-                        + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
 
             new_output = \
                 tf.matmul(
@@ -154,7 +154,7 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec)\
-                        + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
             new_output = \
                 tf.matmul(
                     tf.nn.relu(new_state),
@@ -181,7 +181,7 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec) \
-                        + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
         else:
             new_state = ((1 - self.alpha) * state) \
                         + self.alpha * (
@@ -194,7 +194,7 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec) \
-                        + tf.random_normal(state.get_shape(), mean=0.0, stddev=self.rec_noise)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
 
         return new_state
     def output_step_scan(self, dummy, new_state):
