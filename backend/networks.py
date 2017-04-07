@@ -20,7 +20,7 @@ class Model(object):
         N_rec   = self.N_rec      = params['N_rec']
         N_out   = self.N_out      = params['N_out']
         N_steps = self.N_steps    = params['N_steps']
-        N_batch = self.batch_size = params['N_batch']
+        N_batch = self.N_batch = params['N_batch']
 
         # Physical parameters
         self.dt = params['dt']
@@ -130,7 +130,8 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec)\
-                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
+                          * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
 
             new_output = \
                         tf.matmul(
@@ -154,7 +155,8 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec)\
-                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
+                          * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
             new_output = \
                 tf.matmul(
                     tf.nn.relu(new_state),
@@ -181,7 +183,8 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec) \
-                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
+                          * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
         else:
             new_state = ((1 - self.alpha) * state) \
                         + self.alpha * (
@@ -194,7 +197,8 @@ class Model(object):
                                 tf.abs(self.W_in),
                                 transpose_b=True, name="2")
                             + self.b_rec) \
-                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
+                          * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
 
         return new_state
     def output_step_scan(self, dummy, new_state):
@@ -241,7 +245,7 @@ class Model(object):
             tf.scan(
                 self.output_step_scan,
                 rnn_states,
-                initializer=tf.zeros([self.batch_size, 1]),
+                initializer=tf.zeros([self.N_batch, self.N_out]),
                 parallel_iterations= 1)
         return tf.transpose(rnn_outputs, [1, 0, 2]), tf.transpose(rnn_states, [1, 0, 2])
 

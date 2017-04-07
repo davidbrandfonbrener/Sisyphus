@@ -14,29 +14,31 @@ def set_params(Name = "romo", N_rec = 500,
                dale_ratio=0.8, dt = 10, tau = 100,
                N_batch=64):
 
+    N_steps = fixation + var_fix_length + stim_1 + stim_2 + 2 * var_stim_length + decision
     params = dict()
 
-    params['Name'] = Name
-    params['N_rec'] = N_rec
-    params['N_out'] = 2
-    params['N_steps'] = fixation + var_fix_length + stim_1 + stim_2 + 2*var_stim_length + decision
-    params['N_batch'] = N_batch
-    params['stim_noise']       = stim_noise
-    params['rec_noise']        = rec_noise
-    params['dale_ratio']       = dale_ratio
-    params['tau']               = tau
-    params['dt']                = dt
-    params['alpha']             = dt/tau
+    params['Name']            = Name
+    params['N_rec']           = N_rec
+    params['N_in']            = 2
+    params['N_out']           = 2
+    params['N_steps']         = N_steps
+    params['N_batch']         = N_batch
+    params['stim_noise']      = stim_noise
+    params['rec_noise']       = rec_noise
+    params['dale_ratio']      = dale_ratio
+    params['tau']             = tau
+    params['dt']              = dt
+    params['alpha']           = dt/tau
 
-    params['fixation']          = fixation
-    params['stim_1']            = stim_1
-    params['delay']             = delay
-    params['stim_2']            = stim_2
-    params['decision']          = decision
-    params['var_fix_length']    = var_fix_length
-    params['var_stim_length']   = var_stim_length
-    params['stim_noise']        = stim_noise
-    params['rec_noise']         = rec_noise
+    params['fixation']        = fixation
+    params['stim_1']          = stim_1
+    params['delay']           = delay
+    params['stim_2']          = stim_2
+    params['decision']        = decision
+    params['var_fix_length']  = var_fix_length
+    params['var_stim_length'] = var_stim_length
+    params['stim_noise']      = stim_noise
+    params['rec_noise']       = rec_noise
 
     return params
 
@@ -50,8 +52,8 @@ def scale_n(f):
 
 
 def build_train_batch(params):
-    N_in = params['N_in']
-    N_out = params['N_out']
+    N_in    = params['N_in']
+    N_out   = params['N_out']
     N_batch = params['N_batch']
     N_steps = params['N_steps']
     fixation = params['fixation']
@@ -113,6 +115,7 @@ def build_train_batch(params):
 
     return x_train, y_train, mask
 
+
 def generate_train_trials(params):
     while 1 > 0:
         yield build_train_batch(params)
@@ -120,6 +123,11 @@ def generate_train_trials(params):
 params = set_params()
 
 generator = generate_train_trials(params)
+
+print params["N_in"], params["N_rec"], params["N_out"]
+print "time steps:", params["N_in"]
+print "N_batch:", params["N_batch"]
+
 model = Model(params)
 
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
