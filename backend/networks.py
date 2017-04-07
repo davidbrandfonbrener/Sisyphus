@@ -13,7 +13,7 @@ import numpy as np
 
 
 class Model(object):
-    def __init__(self, params, autapse=True):
+    def __init__(self, params):
 
         # Network sizes (tensor dimensions)
         N_in    = self.N_in       = params['N_in']
