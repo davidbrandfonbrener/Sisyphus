@@ -11,7 +11,7 @@ def visualize_2_input_one_output_trial(model, sess, data):
     plt.show()
 
 def show_W_rec(model, sess):
-    if model.dale:
+    if model.dale_ratio:
         plt.pcolor(np.matmul(abs(model.W_rec.eval(session=sess)), model.dale_rec))
     else:
         plt.pcolor(model.W_rec.eval(session=sess))
@@ -19,7 +19,7 @@ def show_W_rec(model, sess):
     plt.show()
 
 def show_W_out(model, sess):
-    if model.dale:
+    if model.dale_ratio:
         plt.pcolor(np.matmul(abs(model.W_out.eval(session=sess)), model.dale_out))
     else:
         plt.pcolor(model.W_out.eval(session=sess))

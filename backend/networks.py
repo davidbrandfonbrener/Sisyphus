@@ -230,7 +230,6 @@ class Model(object):
 
     def compute_predictions_scan(self):
 
-        #rnn_inputs = tf.unstack(self.x, axis=1)
         state = self.init_state
         rnn_states = \
             tf.scan(

@@ -95,14 +95,15 @@ def generate_train_trials(params):
 params = set_params(N_batch= 64,
                     input_wait=5, stim_dur=5, quiet_gap=10, nturns=5,
                     rec_noise=0.1, stim_noise=0.1,
-                    dale_ratio=.8, tau=0.9)
+                    dale_ratio=.8, tau=100, dt=10.)
 
 generator = generate_train_trials(params)
 model = Model(params)
 
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
 sess = tf.Session(config=configuration)
-model.train(sess, generator, training_iters=80000)
+model.train(sess, generator, training_iters=4000, learning_rate=.01)
 
 data = generator.next()
 V.visualize_2_input_one_output_trial(model, sess, data)
+V.show_W_rec(model, sess)
