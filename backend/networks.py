@@ -106,7 +106,7 @@ class Model(object):
             # ------------------------------------------------
             # Network loss
             # ------------------------------------------------
-            self.predictions, self.states = self.compute_predictions_scan()
+            self.predictions, self.states = self.compute_predictions()
             self.loss = self.reg_loss()
 
     # regularized loss function
@@ -307,9 +307,13 @@ class Model(object):
 
         #save weights
         if weights_path:
-            saver = tf.train.Saver()
-            save_path = saver.save(sess, weights_path)
-            print("Model saved in file: %s" % save_path)
+            np.savez(weights_path, W_in = self.W_in.eval(session=sess),
+                                    W_rec = self.W_rec.eval(session=sess),
+                                    W_out = self.W_out.eval(session=sess),
+                                    b_rec = self.b_rec.eval(session=sess),
+                                    b_out = self.b_out.eval(session=sess),
+                                    init_state = self.init_state.eval(session=sess))
+            print("Model saved in file: %s" % weights_path)
 
 
     # use a trained model to get test outputs

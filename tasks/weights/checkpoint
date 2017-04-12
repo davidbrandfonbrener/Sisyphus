@@ -1,2 +1,0 @@
-model_checkpoint_path: "flipflop.ckpt"
-all_model_checkpoint_paths: "flipflop.ckpt"

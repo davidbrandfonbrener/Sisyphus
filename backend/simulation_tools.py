@@ -40,7 +40,7 @@ class Simulator(object):
                                 np.maximum(state, 0),
                                 np.dot(
                                     self.dale_rec,
-                                    np.absolute(self.W_rec) * self.Connectivity))
+                                    np.absolute(self.W_rec) * self.connect_mat))
                             + np.dot(
                                 np.absolute(self.W_in),
                                 rnn_in)
@@ -51,7 +51,7 @@ class Simulator(object):
             new_output = \
                         np.dot(
                             np.dot(
-                                self.Dale_out,
+                                self.dale_out,
                                 np.absolute(self.W_out)),
                             np.maximum(new_state, 0))\
                         + self.b_out
