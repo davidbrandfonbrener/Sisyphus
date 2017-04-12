@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from backend.networks import Model
 import backend.visualizations as V
+from backend.simulation_tools import Simulator
 
 # flip_flop task
 
@@ -105,11 +106,14 @@ model = Model(params)
 
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
 sess = tf.Session(config=configuration)
-model.train(sess, generator, training_iters=5000, learning_rate=.01, weights_path="./weights/flipflop.npz")
+#model.train(sess, generator, training_iters=5000, learning_rate=.01, weights_path="./weights/flipflop.npz")
 
 data = generator.next()
-V.visualize_2_input_one_output_trial(model, sess, data)
+#V.visualize_2_input_one_output_trial(model, sess, data)
 
-V.show_W_rec(model, sess)
-V.show_W_out(model, sess)
+#V.show_W_rec(model, sess)
+#V.show_W_out(model, sess)
+
+sim = Simulator(params, weights_path="./weights/flipflop.npz")
+sim.run_trial(data[0][0, :, :])
 
