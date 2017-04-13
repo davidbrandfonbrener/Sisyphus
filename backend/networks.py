@@ -51,6 +51,17 @@ class Model(object):
         if self.output_connectivity_mask == None:
             self.output_connectivity_mask = np.ones((N_out, N_rec))
 
+        #regularization coefficients
+        self.L1_in = params['L1_in']
+        self.L1_rec = params['L1_rec']
+        self.L1_out = params['L1_out']
+
+        self.L2_in = params['L2_in']
+        self.L2_rec = params['L1_rec']
+        self.L2_out = params['L2_out']
+
+        self.L2_firing_rate = params['L2_firing_rate']
+
         # Tensorflow initializations
         self.x = tf.placeholder("float", [N_batch, N_steps, N_in])
         self.y = tf.placeholder("float", [N_batch, N_steps, N_out])
@@ -126,7 +137,37 @@ class Model(object):
 
     # regularized loss function
     def reg_loss(self):
+        return self.mean_square_error() + self.regularization()
+
+    # mean squared error
+    def mean_square_error(self):
         return tf.reduce_mean(tf.square(self.output_mask * (self.predictions - self.y)))
+
+    #regularizations
+    def regularization(self):
+        reg = 0
+
+        #L1 weight regularization
+        reg += self.L1_in * tf.reduce_mean(tf.abs(self.W_in) * self.input_Connectivity)
+        reg += self.L1_rec * tf.reduce_mean(tf.abs(self.W_rec) * self.rec_Connectivity)
+        if self.dale_ratio:
+            reg += self.L1_out * tf.reduce_mean(tf.matmul(tf.abs(self.W_out) * self.output_Connectivity, self.Dale_out))
+        else:
+            reg += self.L1_out * tf.reduce_mean(tf.abs(self.W_out) * self.output_Connectivity)
+
+        #L2 weight regularization
+        reg += self.L2_in * tf.reduce_mean(tf.square(tf.abs(self.W_in) * self.input_Connectivity))
+        reg += self.L2_rec * tf.reduce_mean(tf.square(tf.abs(self.W_rec) * self.rec_Connectivity))
+        if self.dale_ratio:
+            reg += self.L2_out * tf.reduce_mean(tf.square(
+                tf.matmul(tf.abs(self.W_out) * self.output_Connectivity, self.Dale_out)))
+        else:
+            reg += self.L2_out * tf.reduce_mean(tf.square(tf.abs(self.W_out) * self.output_Connectivity))
+
+        #L2 firing rate regularization
+        reg += self.L2_firing_rate * tf.reduce_mean(tf.square(tf.nn.relu(self.states)))
+
+        return reg
 
     # implement one step of the RNN
     def rnn_step(self, rnn_in, state):
