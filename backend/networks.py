@@ -329,9 +329,9 @@ class Model(object):
                                     b_rec = self.b_rec.eval(session=sess),
                                     b_out = self.b_out.eval(session=sess),
                                     init_state = self.init_state.eval(session=sess),
-                                    input_Connectivity = self.input_Connectivity(session=sess),
-                                    rec_Connectivity=self.rec_Connectivity(session=sess),
-                                    output_Connectivity=self.output_Connectivity(session=sess))
+                                    input_Connectivity = self.input_Connectivity.eval(session=sess),
+                                    rec_Connectivity=self.rec_Connectivity.eval(session=sess),
+                                    output_Connectivity=self.output_Connectivity.eval(session=sess))
             print("Model saved in file: %s" % weights_path)
 
 

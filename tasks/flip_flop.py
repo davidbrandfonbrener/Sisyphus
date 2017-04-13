@@ -35,7 +35,11 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['var_delay_length'] = var_delay_length
 
     params['input_connectivity_mask'] = None
-    params['recurrent_connectivity_mask'] = None
+
+    connect = np.ones((N_rec, N_rec))
+    for i in range(N_rec):
+        connect[i,i] = 0
+    params['recurrent_connectivity_mask'] = connect
     params['output_connectivity_mask'] = None
 
 
@@ -120,5 +124,5 @@ V.show_W_rec(model, sess)
 V.show_W_out(model, sess)
 
 sim = Simulator(params, weights_path="./weights/flipflop.npz")
-#sim.run_trials(data[0], 64)
+sim.run_trials(data[0], 100)
 
