@@ -33,9 +33,9 @@ class Simulator(object):
 
         # Trained matrices
         weights = np.load(weights_path)
-        self.W_in  = weights['W_in']
-        self.W_rec = weights['W_rec']
-        self.W_out = weights['W_out']
+        self.W_in  = weights['W_in'] * weights['input_Connectivity']
+        self.W_rec = weights['W_rec'] * weights['rec_Connectivity']
+        self.W_out = weights['W_out'] * weights['output_Connectivity']
 
         self.b_rec = weights['b_rec']
         self.b_out = weights['b_out']

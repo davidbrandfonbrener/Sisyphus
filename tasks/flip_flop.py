@@ -34,6 +34,11 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['stim_dur']         = stim_dur
     params['var_delay_length'] = var_delay_length
 
+    params['input_connectivity_mask'] = None
+    params['recurrent_connectivity_mask'] = None
+    params['output_connectivity_mask'] = None
+
+
     return params
 
 # This generates the training data for our network

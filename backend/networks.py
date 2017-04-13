@@ -41,10 +41,15 @@ class Model(object):
             self.dale_out = np.diag(dale_vec)
 
         # Connectivity
-        self.connect_mat = np.ones((N_rec, N_rec))
-        autapse = self.autapse = params.get('autapse', True)
-        if not autapse:
-            self.connect_mat -= np.diag(np.ones(N_rec))
+        self.input_connectivity_mask = params['input_connectivity_mask']
+        self.recurrent_connectivity_mask = params['recurrent_connectivity_mask']
+        self.output_connectivity_mask = params['output_connectivity_mask']
+        if self.input_connectivity_mask == None:
+            self.input_connectivity_mask = np.ones((N_rec, N_in))
+        if self.recurrent_connectivity_mask == None:
+            self.recurrent_connectivity_mask = np.ones((N_rec, N_rec))
+        if self.output_connectivity_mask == None:
+            self.output_connectivity_mask = np.ones((N_out, N_rec))
 
         # Tensorflow initializations
         self.x = tf.placeholder("float", [N_batch, N_steps, N_in])
@@ -98,10 +103,20 @@ class Model(object):
             self.Dale_out = tf.get_variable('Dale_out', [N_rec, N_rec],
                                             initializer=tf.constant_initializer(self.dale_out),
                                             trainable=False)
-            # Recurrent connectivity weight matrix:
-            self.Connectivity = tf.get_variable('Connectivity', [N_rec, N_rec],
-                                                initializer=tf.constant_initializer(self.connect_mat),
-                                                trainable=False)
+
+            # Connectivity weight matrices:
+            self.input_Connectivity = tf.get_variable('input_Connectivity', [N_rec, N_in],
+                                                    initializer=tf.constant_initializer(
+                                                        self.input_connectivity_mask),
+                                                    trainable=False)
+            self.rec_Connectivity = tf.get_variable('rec_Connectivity', [N_rec, N_rec],
+                                                    initializer=tf.constant_initializer(
+                                                        self.recurrent_connectivity_mask),
+                                                    trainable=False)
+            self.output_Connectivity = tf.get_variable('output_Connectivity', [N_out, N_rec],
+                                                    initializer=tf.constant_initializer(
+                                                        self.output_connectivity_mask),
+                                                    trainable=False)
 
             # ------------------------------------------------
             # Network loss
@@ -122,12 +137,12 @@ class Model(object):
                             tf.matmul(
                                 tf.nn.relu(state),
                                 tf.matmul(
-                                    tf.abs(self.W_rec) * self.Connectivity,
+                                    tf.abs(self.W_rec) * self.rec_Connectivity,
                                     self.Dale_rec, name="in_1"),
                                 transpose_b=True, name="1")
                             + tf.matmul(
                                 rnn_in,
-                                tf.abs(self.W_in),
+                                tf.abs(self.W_in) * self.input_Connectivity,
                                 transpose_b=True, name="2")
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
@@ -137,7 +152,7 @@ class Model(object):
                         tf.matmul(
                             tf.nn.relu(new_state),
                             tf.matmul(
-                                tf.abs(self.W_out),
+                                tf.abs(self.W_out) * self.output_Connectivity,
                                 self.Dale_out,
                                 name="in_2"),
                             transpose_b=True, name="3")\
@@ -148,11 +163,11 @@ class Model(object):
                         + self.alpha * (
                             tf.matmul(
                                 tf.nn.relu(state),
-                                self.W_rec,
+                                self.W_rec * self.rec_Connectivity,
                                 transpose_b=True, name="1")
                             + tf.matmul(
                                 rnn_in,
-                                tf.abs(self.W_in),
+                                self.W_in * self.input_Connectivity,
                                 transpose_b=True, name="2")
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
@@ -160,7 +175,7 @@ class Model(object):
             new_output = \
                 tf.matmul(
                     tf.nn.relu(new_state),
-                    self.W_out,
+                    self.W_out * self.output_Connectivity,
                     transpose_b=True, name="3")\
                 + self.b_out
 
@@ -175,12 +190,12 @@ class Model(object):
                             tf.matmul(
                                 tf.nn.relu(state),
                                 tf.matmul(
-                                    tf.abs(self.W_rec) * self.Connectivity,
+                                    tf.abs(self.W_rec) * self.rec_Connectivity,
                                     self.Dale_rec, name="in_1"),
                                 transpose_b=True, name="1")
                             + tf.matmul(
                                 rnn_in,
-                                tf.abs(self.W_in),
+                                tf.abs(self.W_in) * self.input_Connectivity,
                                 transpose_b=True, name="2")
                             + self.b_rec) \
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
@@ -190,11 +205,11 @@ class Model(object):
                         + self.alpha * (
                             tf.matmul(
                                 tf.nn.relu(state),
-                                self.W_rec,
+                                self.W_rec * self.rec_Connectivity,
                                 transpose_b=True, name="1")
                             + tf.matmul(
                                 rnn_in,
-                                tf.abs(self.W_in),
+                                self.W_in * self.input_Connectivity,
                                 transpose_b=True, name="2")
                             + self.b_rec) \
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
@@ -207,14 +222,15 @@ class Model(object):
             new_output = tf.matmul(
                             tf.nn.relu(new_state),
                             tf.matmul(
-                                tf.abs(self.W_out),
+                                tf.abs(self.W_out) * self.output_Connectivity,
                                 self.Dale_out,
                                 name="in_2"),
                             transpose_b=True, name="3")\
                          + self.b_out
 
         else:
-            new_output = tf.matmul(tf.nn.relu(new_state), self.W_out, transpose_b=True, name="3") + self.b_out
+            new_output = tf.matmul(tf.nn.relu(new_state), self.W_out * self.output_Connectivity,
+                                   transpose_b=True, name="3") + self.b_out
 
         return new_output
 
@@ -312,7 +328,10 @@ class Model(object):
                                     W_out = self.W_out.eval(session=sess),
                                     b_rec = self.b_rec.eval(session=sess),
                                     b_out = self.b_out.eval(session=sess),
-                                    init_state = self.init_state.eval(session=sess))
+                                    init_state = self.init_state.eval(session=sess),
+                                    input_Connectivity = self.input_Connectivity(session=sess),
+                                    rec_Connectivity=self.rec_Connectivity(session=sess),
+                                    output_Connectivity=self.output_Connectivity(session=sess))
             print("Model saved in file: %s" % weights_path)
 
 
