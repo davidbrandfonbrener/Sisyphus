@@ -15,7 +15,7 @@ def visualize_2_input_one_output_trial(model, sess, data):
 
 def show_W_rec(model, sess):
     if model.dale_ratio:
-        plt.pcolor(np.matmul(abs(model.W_rec.eval(session=sess)), model.dale_rec))
+        plt.pcolor(np.matmul(abs(model.W_rec.eval(session=sess)) * model.recurrent_connectivity_mask, model.dale_rec))
     else:
         plt.pcolor(model.W_rec.eval(session=sess))
     plt.colorbar()
@@ -24,7 +24,7 @@ def show_W_rec(model, sess):
 
 def show_W_in(model, sess):
     if model.dale_ratio:
-        plt.pcolor(np.matmul(abs(model.W_in.eval(session=sess)), model.dale_out))
+        plt.pcolor(np.matmul(abs(model.W_in.eval(session=sess)) * model.input_connectivity_mask, model.dale_out))
     else:
         plt.pcolor(model.W_in.eval(session=sess))
     plt.colorbar()
@@ -33,7 +33,7 @@ def show_W_in(model, sess):
 
 def show_W_out(model, sess):
     if model.dale_ratio:
-        plt.pcolor(np.matmul(abs(model.W_out.eval(session=sess)), model.dale_out))
+        plt.pcolor(np.matmul(abs(model.W_out.eval(session=sess)) * model.output_connectivity_mask, model.dale_out))
     else:
         plt.pcolor(model.W_out.eval(session=sess))
     plt.colorbar()

@@ -349,6 +349,7 @@ class Model(object):
 
         sess.run(tf.global_variables_initializer())
         step = 1
+
         # Keep training until reach max iterations
         while step * batch_size < training_iters:
             batch_x, batch_y, output_mask = generator.next()
