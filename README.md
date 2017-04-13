@@ -4,11 +4,9 @@ todo:
 
 visualization
 
-saving trained networks (as numpy arrays)
-
-performance tests (scan function, etc.)
+performance tests (get it running on the cluster)
 
 regularization
 
-build our own numpy simulator of forward pass
+
 
