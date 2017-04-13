@@ -46,16 +46,16 @@ class Simulator(object):
     def rnn_step(self, state, rnn_in):
         if self.dale_ratio:
             new_state = (1-self.alpha) * state \
-                        + self.alpha * (  np.dot(np.maximum(state, np.zeros(state.shape)),
-                                np.transpose(np.dot(np.absolute(self.W_rec) * self.connect_mat, self.dale_rec)))
-                            + np.dot(rnn_in, np.transpose(np.absolute(self.W_in)) )
+                        + self.alpha * (np.matmul(np.maximum(state, np.zeros(state.shape)),
+                                np.transpose(np.matmul(np.absolute(self.W_rec) * self.connect_mat, self.dale_rec)))
+                            + np.matmul(rnn_in, np.transpose(np.absolute(self.W_in)) )
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * np.random.normal(loc=0.0, scale=1.0, size=state.shape)
 
             new_output = \
-                        np.dot(
+                        np.matmul(
                             np.maximum(new_state, np.zeros(state.shape)),
-                            np.transpose(np.dot(
+                            np.transpose(np.matmul(
                                 np.absolute(self.W_out),
                                 self.dale_out)))\
                         + self.b_out
@@ -68,6 +68,22 @@ class Simulator(object):
         rnn_inputs = np.split(trial_input, trial_input.shape[0], axis=0)
         print len(rnn_inputs)
         state = np.expand_dims(self.init_state[0, :], 0)
+        rnn_outputs = []
+        rnn_states = []
+        for rnn_input in rnn_inputs:
+            output, state = self.rnn_step(state, rnn_input)
+            rnn_outputs.append(output)
+            rnn_states.append(state)
+        return np.array(rnn_outputs), np.array(rnn_states)
+
+
+    #apply the RNN to a whole batch of inputs
+    def run_trials(self, trial_input, batch_size):
+
+        rnn_inputs = np.split(trial_input, trial_input.shape[1], axis=1)
+        print len(rnn_inputs)
+        state = np.expand_dims(self.init_state[0, :], 0)
+        state = np.repeat(state, batch_size, 0)
         rnn_outputs = []
         rnn_states = []
         for rnn_input in rnn_inputs:

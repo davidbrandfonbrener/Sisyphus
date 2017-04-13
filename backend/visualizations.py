@@ -1,6 +1,7 @@
 from backend.networks import Model
 import matplotlib.pyplot as plt
 import numpy as np
+from simulation_tools import Simulator
 
 
 # visualize network output on a trial, compared to desired output
@@ -36,4 +37,10 @@ def show_W_out(model, sess):
     else:
         plt.pcolor(model.W_out.eval(session=sess))
     plt.colorbar()
+    plt.show()
+
+
+def plot_states(states):
+    for i in range(states.shape[2]):
+        plt.plot(range(states.shape[0]), states[:, 0, i])
     plt.show()
