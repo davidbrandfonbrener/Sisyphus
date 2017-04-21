@@ -66,7 +66,6 @@ class Simulator(object):
     def run_trial(self, trial_input):
 
         rnn_inputs = np.split(trial_input, trial_input.shape[0], axis=0)
-        print len(rnn_inputs)
         state = np.expand_dims(self.init_state[0, :], 0)
         rnn_outputs = []
         rnn_states = []
