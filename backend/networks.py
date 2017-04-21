@@ -44,11 +44,11 @@ class Model(object):
         self.input_connectivity_mask = params.get('input_connectivity_mask', None)
         self.recurrent_connectivity_mask = params.get('recurrent_connectivity_mask', None)
         self.output_connectivity_mask = params.get('output_connectivity_mask', None)
-        if not self.input_connectivity_mask:
+        if self.input_connectivity_mask == None:
             self.input_connectivity_mask = np.ones((N_rec, N_in))
-        if not self.recurrent_connectivity_mask:
+        if self.recurrent_connectivity_mask == None:
             self.recurrent_connectivity_mask = np.ones((N_rec, N_rec))
-        if not self.output_connectivity_mask:
+        if self.output_connectivity_mask == None:
             self.output_connectivity_mask = np.ones((N_out, N_rec))
 
         #regularization coefficients

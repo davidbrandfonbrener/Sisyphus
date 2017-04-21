@@ -46,9 +46,9 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['L1_in'] = 0
     params['L1_rec'] = 0
     params['L1_out'] = 0
-    params['L2_in'] = 1.0
+    params['L2_in'] = 0
     params['L2_rec'] = 1.0
-    params['L2_out'] = 1.0
+    params['L2_out'] = 0
     params['L2_firing_rate'] = 1.0
 
     return params
