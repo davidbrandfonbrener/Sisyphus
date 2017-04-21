@@ -11,7 +11,7 @@ def set_params(Name = "romo", N_rec = 500,
                fixation = 25, stim_1 = 25, delay = 150, stim_2 = 25, decision=15,
                var_fix_length = 0, var_stim_length = 0,
                stim_noise = 0.1, rec_noise = 0.1,
-               dale_ratio=0.8, dt = 10, tau = 100,
+               dale_ratio=0.8, dt = 20, tau = 100,
                N_batch=64):
 
     N_steps = fixation + var_fix_length + stim_1 + stim_2 + 2 * var_stim_length + decision
@@ -124,7 +124,6 @@ params = set_params()
 
 generator = generate_train_trials(params)
 
-print params["N_in"], params["N_rec"], params["N_out"]
 print "time steps:", params["N_in"]
 print "N_batch:", params["N_batch"]
 

@@ -41,26 +41,26 @@ class Model(object):
             self.dale_out = np.diag(dale_vec)
 
         # Connectivity
-        self.input_connectivity_mask = params['input_connectivity_mask']
-        self.recurrent_connectivity_mask = params['recurrent_connectivity_mask']
-        self.output_connectivity_mask = params['output_connectivity_mask']
-        if self.input_connectivity_mask == None:
+        self.input_connectivity_mask = params.get('input_connectivity_mask', None)
+        self.recurrent_connectivity_mask = params.get('recurrent_connectivity_mask', None)
+        self.output_connectivity_mask = params.get('output_connectivity_mask', None)
+        if not self.input_connectivity_mask:
             self.input_connectivity_mask = np.ones((N_rec, N_in))
-        if self.recurrent_connectivity_mask == None:
+        if not self.recurrent_connectivity_mask:
             self.recurrent_connectivity_mask = np.ones((N_rec, N_rec))
-        if self.output_connectivity_mask == None:
+        if not self.output_connectivity_mask:
             self.output_connectivity_mask = np.ones((N_out, N_rec))
 
         #regularization coefficients
-        self.L1_in = params['L1_in']
-        self.L1_rec = params['L1_rec']
-        self.L1_out = params['L1_out']
+        self.L1_in = params.get('L1_in', 0)
+        self.L1_rec = params.get('L1_rec', 0)
+        self.L1_out = params.get('L1_out', 0)
 
-        self.L2_in = params['L2_in']
-        self.L2_rec = params['L1_rec']
-        self.L2_out = params['L2_out']
+        self.L2_in = params.get('L2_in', 0)
+        self.L2_rec = params.get('L2_rec',0)
+        self.L2_out = params.get('L2_out',0)
 
-        self.L2_firing_rate = params['L2_firing_rate']
+        self.L2_firing_rate = params.get('L2_firing_rate', 0)
 
         # Tensorflow initializations
         self.x = tf.placeholder("float", [N_batch, N_steps, N_in])
@@ -257,6 +257,7 @@ class Model(object):
                           * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
 
         return new_state
+
     def output_step_scan(self, dummy, new_state):
 
         if self.dale_ratio:
@@ -275,7 +276,6 @@ class Model(object):
 
         return new_output
 
-    # apply the step to a full input vector
     def compute_predictions(self):
 
         rnn_inputs = tf.unstack(self.x, axis=1)

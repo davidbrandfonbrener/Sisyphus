@@ -9,9 +9,9 @@ from backend.simulation_tools import Simulator
 # Builds a dictionary of parameters that specifies the information
 # about an instance of this specific task
 def set_params(Name = "flip_flop", N_rec = 50,
-                nturns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
+               N_turns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
                var_delay_length = 0, stim_noise = 0.1, rec_noise = .1,
-               N_batch = 128, dale_ratio=0.8, dt = 10, tau = 100):
+               N_batch = 128, dale_ratio=0.8, dt = 10, tau = 100, seed=None):
 
     params = dict()
 
@@ -19,7 +19,7 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['N_in'] = 2
     params['N_rec'] = N_rec
     params['N_out'] = 1
-    params['N_steps'] = input_wait + nturns * (stim_dur + quiet_gap + var_delay_length)
+    params['N_steps'] = input_wait + N_turns * (stim_dur + quiet_gap + var_delay_length)
     params['N_batch'] = N_batch
     params['stim_noise']       = stim_noise
     params['rec_noise']        = rec_noise
@@ -28,7 +28,7 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['dt']                = dt
     params['alpha']             = dt/tau
 
-    params['nturns']          = nturns
+    params['N_turns']          = N_turns
     params['input_wait']       = input_wait
     params['quiet_gap']        = quiet_gap
     params['stim_dur']         = stim_dur
@@ -53,6 +53,8 @@ def set_params(Name = "flip_flop", N_rec = 50,
 
     return params
 
+
+
 # This generates the training data for our network
 # It will be a set of input_times and output_times for when we expect input
 # and when the corresponding output is expected
@@ -61,47 +63,41 @@ def build_train_batch(params):
     N_out = params['N_out']
     N_batch = params['N_batch']
     N_steps = params['N_steps']
-    nturns = params['nturns']
+    N_turns = params['N_turns']
     input_wait = params['input_wait']
     quiet_gap = params['quiet_gap']
     stim_dur = params['stim_dur']
     var_delay_length = params['var_delay_length']
     stim_noise = params['stim_noise']
 
-
-
     if var_delay_length == 0:
         var_delay = np.zeros(N_batch, dtype=int)
     else:
         var_delay = np.random.randint(var_delay_length, size=N_batch) + 1
 
-    input_times  = np.zeros([N_batch, nturns], dtype=np.int)
-    output_times = np.zeros([N_batch, nturns], dtype=np.int)
+    input_times  = np.zeros([N_batch, N_turns], dtype=np.int)
+    output_times = np.zeros([N_batch, N_turns], dtype=np.int)
 
     turn_time = np.zeros(N_batch, dtype=np.int)
 
     for sample in np.arange(N_batch):
         turn_time[sample] = stim_dur + quiet_gap + var_delay[sample]
-        for i in np.arange(nturns):
+        for i in np.arange(N_turns):
             input_times[sample, i] = input_wait + i * turn_time[sample]
             output_times[sample, i] = input_wait + i * turn_time[sample] + stim_dur
 
-    #N_steps = np.amax([output_times[sample, nturns - 1] + quiet_gap, sample in np.arange(N_batch)])
-
     x_train = np.zeros([N_batch, N_steps, N_in])
     y_train = 0.5 * np.ones([N_batch, N_steps, N_out])
+    mask = np.zeros((N_batch, N_steps, N_out))
     for sample in np.arange(N_batch):
-        for turn in np.arange(nturns):
+        for turn in np.arange(N_turns):
             firing_neuron = np.random.randint(2)  # 0 or 1
             x_train[sample, input_times[sample, turn]:(input_times[sample, turn] + stim_dur), firing_neuron] = 1
             y_train[sample, output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]), 0] = firing_neuron
+        mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
 
-    #note:
-    # TODO im doing a quick fix, only considering 1 ouput neuron
-    mask = np.zeros((N_batch, N_steps, N_out))
     for sample in np.arange(N_batch):
         mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
-    mask = np.array(mask, dtype=float)
 
     x_train = x_train + stim_noise * np.random.randn(N_batch, N_steps, 2)
     params['input_times'] = input_times
@@ -114,7 +110,7 @@ def generate_train_trials(params):
         yield build_train_batch(params)
 
 params = set_params(N_batch= 64,
-                    input_wait=5, stim_dur=5, quiet_gap=10, nturns=5,
+                    input_wait=5, stim_dur=5, quiet_gap=10, N_turns=5,
                     rec_noise=0.1, stim_noise=0.1,
                     dale_ratio=.8, tau=100, dt=10.)
 
@@ -133,4 +129,3 @@ V.show_W_out(model, sess)
 
 sim = Simulator(params, weights_path="./weights/flipflop.npz")
 sim.run_trials(data[0], 100)
-

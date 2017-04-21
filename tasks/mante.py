@@ -50,6 +50,7 @@ def build_train_batch(params):
     N_steps = params['N_steps']
     fixation = params['fixation']
     stimulus = params['stimulus']
+    decision = params['decision']
     var_fix_length = params['var_stim_length']
     var_stim_length = params['var_stim_length']
     lo = 0.2
@@ -85,6 +86,9 @@ def build_train_batch(params):
         coh_c = np.random.choice(coherences)
         left_right_m = np.random.choice(left_rights)
         left_right_c = np.random.choice(left_rights)
+        input_time = input_times[sample]
+        output_time = output_times[sample]
+        end_time = output_times[sample] + decision
 
         if context == 'm':
             left_right = left_right_m
@@ -95,13 +99,13 @@ def build_train_batch(params):
 
         if left_right_m > 0: choice_m = 0
         else:                choice_m = 1
-        x_train[sample, input_times[sample]:output_times[sample], 2+choice_m]     = scale(+coh_m)
-        x_train[sample, input_times[sample]:output_times[sample], 2+(1-choice_m)] = scale(-coh_m)
+        x_train[sample, input_time:output_time, 2+choice_m]     = scale(+coh_m)
+        x_train[sample, input_time:output_time, 2+(1-choice_m)] = scale(-coh_m)
 
         if left_right_c > 0: choice_c = 0
         else:                choice_c = 1
-        x_train[sample, input_times[sample]:output_times[sample], 4+choice_c]     = scale(+coh_c)
-        x_train[sample, input_times[sample]:output_times[sample], 4+(1-choice_c)] = scale(-coh_c)
+        x_train[sample, input_time:output_time, 4+choice_c]     = scale(+coh_c)
+        x_train[sample, input_time:output_time, 4+(1-choice_c)] = scale(-coh_c)
 
         if left_right > 0: choice = 0
         else:              choice = 1
@@ -110,8 +114,8 @@ def build_train_batch(params):
         y_train[sample, output_times[sample]:, choice] = hi
         y_train[sample, output_times[sample]:, 1-choice] = lo
 
-        mask[sample, :input_times[sample], :]  = 1.0
-        mask[sample, output_times[sample]:, :] = 1.0
+        mask[sample, :input_time, :] = 1.0
+        mask[sample, output_time:end_time, :] = 1.0
 
     return x_train, y_train, mask
 
