@@ -335,7 +335,7 @@ class Model(object):
         # add diagnal matrix 1-alpha to account for persistance tau
         return (1.1/rho) * W  # - .9*np.diag(np.ones(self.N_rec)*(1-self.alpha)) #correct for tau
 
-    #TODO: 1) gradient clipping, 2) Omega regularizer, 3) susillo regularizer
+    #TODO: 1) Omega regularizer, 2) susillo regularizer
     # vanishing gradient regularization, Omega, as in Pascanu
     #NOTE: this is RELU specific
     def Omega_reg(self):
@@ -376,7 +376,7 @@ class Model(object):
                     self.b_rec, self.b_out,
                     self.init_state]
 
-        #train
+        #train with gradient clipping
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         grads = optimizer.compute_gradients(self.loss)
         clipped_grads = [(tf.clip_by_norm(grad, 1.0), var)
@@ -384,6 +384,7 @@ class Model(object):
                         for grad, var in grads]
         optimize = optimizer.apply_gradients(clipped_grads)
 
+        #run session
         sess.run(tf.global_variables_initializer())
         step = 1
 
