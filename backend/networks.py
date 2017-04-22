@@ -169,7 +169,7 @@ class Model(object):
         reg += self.L2_firing_rate * tf.reduce_mean(tf.square(tf.nn.relu(self.states)))
 
         #Omega regularization
-        reg += self.Omega_reg()
+        #reg += self.Omega_reg()
 
         return reg
 
@@ -358,8 +358,12 @@ class Model(object):
             bounded = tf.where(tf.greater(denom, 1e-20), num/denom, tf.ones_like(num))
             nelems += tf.reduce_mean(tf.where(tf.greater(denom, 1e-20), tf.ones_like(num), tf.zeros_like(num)))
 
+            tf.verify_tensor_all_finite(bounded, "nope")
+
             #sum mean over each batch by time steps
             reg += tf.reduce_mean(tf.square(bounded - 1))
+
+        tf.verify_tensor_all_finite(reg, "nope")
 
         return reg / nelems
 
@@ -372,9 +376,13 @@ class Model(object):
                     self.b_rec, self.b_out,
                     self.init_state]
 
-        optimizer = tf.train.\
-            AdamOptimizer(learning_rate=learning_rate).\
-            minimize(self.loss, var_list=var_list)
+        #train
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        grads = optimizer.compute_gradients(self.loss)
+        clipped_grads = [(tf.clip_by_norm(grad, 1.0), var)
+                         if grad is not None else (grad, var)
+                        for grad, var in grads]
+        optimize = optimizer.apply_gradients(clipped_grads)
 
         sess.run(tf.global_variables_initializer())
         step = 1
@@ -382,7 +390,7 @@ class Model(object):
         # Keep training until reach max iterations
         while step * batch_size < training_iters:
             batch_x, batch_y, output_mask = generator.next()
-            sess.run(optimizer, feed_dict={self.x: batch_x, self.y: batch_y, self.output_mask: output_mask})
+            sess.run(optimize, feed_dict={self.x: batch_x, self.y: batch_y, self.output_mask: output_mask})
             if step % display_step == 0:
                 # Calculate batch loss
                 loss = sess.run(self.loss,
