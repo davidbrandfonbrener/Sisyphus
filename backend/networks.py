@@ -169,7 +169,7 @@ class Model(object):
         reg += self.L2_firing_rate * tf.reduce_mean(tf.square(tf.nn.relu(self.states)))
 
         #Omega regularization
-        #reg += self.Omega_reg()
+        reg += self.Omega_reg()
 
         return reg
 
@@ -287,7 +287,7 @@ class Model(object):
             output = self.rnn_output(state)
             rnn_outputs.append(output)
             rnn_states.append(state)
-        return tf.transpose(rnn_outputs, [1, 0, 2]), tf.transpose(rnn_states, [1, 0, 2])
+        return tf.transpose(rnn_outputs, [1, 0, 2]), rnn_states
 
 
     def compute_predictions_scan(self):
@@ -305,7 +305,7 @@ class Model(object):
                 rnn_states,
                 initializer=tf.zeros([self.N_batch, self.N_out]),
                 parallel_iterations= 1)
-        return tf.transpose(rnn_outputs, [1, 0, 2]), tf.transpose(rnn_states, [1, 0, 2])
+        return tf.transpose(rnn_outputs, [1, 0, 2]), rnn_states
 
 
     #fix spectral radius of recurrent matrix
@@ -337,28 +337,31 @@ class Model(object):
 
     #TODO: 1) gradient clipping, 2) Omega regularizer, 3) susillo regularizer
     # vanishing gradient regularization, Omega, as in Pascanu
+    #NOTE: this is RELU specific
     def Omega_reg(self):
 
-        states = tf.unstack(self.states, axis=1)
-        print(states[0].get_shape())
+        states = self.states
         dxt_list = tf.gradients(self.error, states)
 
-        print(len(dxt_list))
-        print(type(dxt_list[0]))
-        print(tf.shape(dxt_list[0]))
-
         reg = 0
+        nelems = 0
 
-        for dxt in dxt_list:
+        for i, dxt in enumerate(dxt_list):
             num = (1 - self.alpha) * dxt + tf.matmul(self.alpha * dxt ,
-                                                     tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity, self.Dale_rec))
+                                                     tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity, self.Dale_rec)) * \
+                                            tf.where(tf.greater(states[i], 0), tf.ones_like(states[i]), tf.zeros_like(states[i]))
             denom = dxt
+            #sum over hidden units
+            num = tf.reduce_sum(tf.square(num), 1)
+            denom = tf.reduce_sum(tf.square(denom), 1)
 
-            num = tf.reduce_mean(tf.square(num))
-            denom = tf.reduce_mean(tf.square(denom))
-            reg += num/denom
+            bounded = tf.where(tf.greater(denom, 1e-20), num/denom, tf.ones_like(num))
+            nelems += tf.reduce_mean(tf.where(tf.greater(denom, 1e-20), tf.ones_like(num), tf.zeros_like(num)))
 
-        return tf.reduce_mean(reg)
+            #sum mean over each batch by time steps
+            reg += tf.reduce_mean(tf.square(bounded - 1))
+
+        return reg / nelems
 
     # train the model using Adam
     def train(self, sess, generator,
