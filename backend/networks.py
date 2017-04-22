@@ -133,7 +133,8 @@ class Model(object):
             # Network loss
             # ------------------------------------------------
             self.predictions, self.states = self.compute_predictions()
-            self.loss = self.reg_loss()
+            self.error = self.mean_square_error()
+            self.loss = self.error + self.regularization()
 
     # regularized loss function
     def reg_loss(self):
@@ -167,6 +168,9 @@ class Model(object):
         #L2 firing rate regularization
         reg += self.L2_firing_rate * tf.reduce_mean(tf.square(tf.nn.relu(self.states)))
 
+        #Omega regularization
+        #reg += self.Omega_reg()
+
         return reg
 
     # implement one step of the RNN
@@ -189,16 +193,6 @@ class Model(object):
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
                           * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
 
-            new_output = \
-                        tf.matmul(
-                            tf.nn.relu(new_state),
-                            tf.matmul(
-                                tf.abs(self.W_out) * self.output_Connectivity,
-                                self.Dale_out,
-                                name="in_2"),
-                            transpose_b=True, name="3")\
-                        + self.b_out
-
         else:
             new_state = ((1-self.alpha) * state) \
                         + self.alpha * (
@@ -213,15 +207,21 @@ class Model(object):
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
                           * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
-            new_output = \
-                tf.matmul(
-                    tf.nn.relu(new_state),
-                    self.W_out * self.output_Connectivity,
-                    transpose_b=True, name="3")\
-                + self.b_out
-
             
-        return new_output, new_state
+        return new_state
+
+    def rnn_output(self, new_state):
+        if self.dale_ratio:
+            new_output = tf.matmul(tf.nn.relu(new_state),
+                                    tf.matmul(tf.abs(self.W_out) * self.output_Connectivity,
+                                            self.Dale_out, name="in_2"), transpose_b=True, name="3") \
+                        + self.b_out
+        else:
+            new_output = tf.matmul(tf.nn.relu(new_state),
+                                self.W_out * self.output_Connectivity, transpose_b=True, name="3") \
+                        + self.b_out
+
+        return new_output
 
     def rnn_step_scan(self, state, rnn_in):
 
@@ -283,7 +283,8 @@ class Model(object):
         rnn_outputs = []
         rnn_states = []
         for rnn_input in rnn_inputs:
-            output, state = self.rnn_step(rnn_input, state)
+            state = self.rnn_step(rnn_input, state)
+            output = self.rnn_output(state)
             rnn_outputs.append(output)
             rnn_states.append(state)
         return tf.transpose(rnn_outputs, [1, 0, 2]), tf.transpose(rnn_states, [1, 0, 2])
@@ -333,6 +334,31 @@ class Model(object):
         # +np.diag(np.ones(self.N_rec)*(1-self.alpha)))))
         # add diagnal matrix 1-alpha to account for persistance tau
         return (1.1/rho) * W  # - .9*np.diag(np.ones(self.N_rec)*(1-self.alpha)) #correct for tau
+
+    #TODO: 1) gradient clipping, 2) Omega regularizer, 3) susillo regularizer
+    # vanishing gradient regularization, Omega, as in Pascanu
+    def Omega_reg(self):
+
+        states = tf.unstack(self.states, axis=1)
+        print(states[0].get_shape())
+        dxt_list = tf.gradients(self.error, states)
+
+        print(len(dxt_list))
+        print(type(dxt_list[0]))
+        print(tf.shape(dxt_list[0]))
+
+        reg = 0
+
+        for dxt in dxt_list:
+            num = (1 - self.alpha) * dxt + tf.matmul(self.alpha * dxt ,
+                                                     tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity, self.Dale_rec))
+            denom = dxt
+
+            num = tf.reduce_mean(tf.square(num))
+            denom = tf.reduce_mean(tf.square(denom))
+            reg += num/denom
+
+        return tf.reduce_mean(reg)
 
     # train the model using Adam
     def train(self, sess, generator,
