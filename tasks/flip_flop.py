@@ -118,7 +118,7 @@ generator = generate_train_trials(params)
 model = Model(params)
 
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
-sess = tf.Session(config=configuration)
+sess = tf.Session(config=configuration, config=tf.ConfigProto(log_device_placement=True))
 model.train(sess, generator, training_iters=10000, learning_rate=.01, weights_path="./weights/flipflop.npz")
 
 data = generator.next()
