@@ -1,7 +1,7 @@
 from backend.networks import Model
 import matplotlib.pyplot as plt
 import numpy as np
-from simulation_tools import Simulator
+#from backend.simulation_tools import Simulator
 
 
 # visualize network output on a trial, compared to desired output
