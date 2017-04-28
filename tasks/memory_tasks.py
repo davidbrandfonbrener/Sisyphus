@@ -2,15 +2,19 @@ import numpy as np
 import tensorflow as tf
 from backend.networks import Model
 import backend.visualizations as V
+from backend.simulation_tools import Simulator
 
 
 # Builds a dictionary of parameters that specifies the information
 # about an instance of this specific task
-def set_params(n_in = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, out_dur=5,
-                    var_delay_length = 0, stim_noise = 0, rec_noise = .1,
-                    sample_size = 128, epochs = 100, N_rec = 50, dale_ratio=0.8, tau=100,task='xor'):
+def set_params(n_in = 2, n_out = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, out_dur=5,
+                    var_delay_length = 0, stim_noise = 0, rec_noise = .1, L1_rec = 0, L2_firing_rate = 1,
+                    sample_size = 128, epochs = 100, N_rec = 50, dale_ratio=0.8, tau=100.0, dt = 10.0, task='xor'):
     params = dict()
     params['N_in']             = n_in
+    params['N_out']            = n_out
+    params['N_steps']          = input_wait + stim_dur + mem_gap + stim_dur + out_dur
+    params['N_batch']          = sample_size
     params['input_wait']       = input_wait
     params['mem_gap']          = mem_gap
     params['stim_dur']         = stim_dur
@@ -23,7 +27,11 @@ def set_params(n_in = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, out_dur=5,
     params['N_rec']            = N_rec
     params['dale_ratio']       = dale_ratio
     params['tau']              = tau
+    params['dt']               = dt
+    params['alpha']            = dt/tau
     params['task']             = task
+    params['L1_rec']           = L1_rec
+    params['L2_firing_rate']   = L2_firing_rate
 
     return params
 
@@ -99,28 +107,37 @@ if __name__ == "__main__":
     n_steps = 80 
     tau = 100.0 #As double
     dt = 20.0  #As double
-    dale_ratio = 0
+    dale_ratio = 0.8
     rec_noise = 0.00001
     stim_noise = 0.2
     batch_size = 128
     
     #train params
-    learning_rate = .01 
-    training_iters = 200000
+    learning_rate = .001 
+    training_iters = 2000000
     display_step = 50
     
-    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden, 
+    #weights_path = './weights/mem_sac.npz'
+    weights_path = None
+    
+    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden,
+                        n_out = n_out, n_in = n_in,
                         rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
-    model = Model(n_in, n_hidden, n_out, n_steps, tau, dt, dale_ratio, rec_noise, batch_size)
+    #model = Model(n_in, n_hidden, n_out, n_steps, tau, dt, dale_ratio, rec_noise, batch_size)
+    model = Model(params)
     sess = tf.Session()
     
     
     
-    model.train(sess, generator, learning_rate, training_iters, batch_size, display_step, dale_ratio)
+    model.train(sess, generator, learning_rate = learning_rate, training_iters = training_iters, weights_path = weights_path)
 
-    input,target,m = generator.next()
-    output,states = model.test(sess, model, input)
+    data = generator.next()
+    #output,states = model.test(sess, input, weights_path = weights_path)
+    
+    #sim = Simulator(params, weights_path="./weights/mem_sac.npz")
+    #output,states = sim.run_trials(data[0], 100)
+    
     W = model.W_rec.eval(session=sess)
     U = model.W_in.eval(session=sess)
     Z = model.W_out.eval(session=sess)
