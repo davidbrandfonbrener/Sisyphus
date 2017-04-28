@@ -61,6 +61,7 @@ class Model(object):
         self.L2_out = params.get('L2_out',0)
 
         self.L2_firing_rate = params.get('L2_firing_rate', 0)
+        self.sussillo_constant = params.get('sussillo_constant', 0)
 
         # Tensorflow initializations
         self.x = tf.placeholder("float", [N_batch, N_steps, N_in])
@@ -172,7 +173,7 @@ class Model(object):
         #reg += self.Omega_reg()
 
         # susillo regularization
-        reg += .1 * self.sussilo_reg()
+        reg += self.sussillo_constant * self.sussillo_reg()
 
         return reg
 
@@ -370,7 +371,7 @@ class Model(object):
 
         return reg / nelems
 
-    def sussilo_reg(self):
+    def sussillo_reg(self):
 
         states = self.states
 

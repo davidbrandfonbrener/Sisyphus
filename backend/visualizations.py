@@ -24,7 +24,7 @@ def show_W_rec(model, sess):
 
 def show_W_in(model, sess):
     if model.dale_ratio:
-        plt.pcolor(np.matmul(abs(model.W_in.eval(session=sess)) * model.input_connectivity_mask, model.dale_out))
+        plt.pcolor(abs(model.W_in.eval(session=sess)) * model.input_connectivity_mask)
     else:
         plt.pcolor(model.W_in.eval(session=sess))
     plt.colorbar()
