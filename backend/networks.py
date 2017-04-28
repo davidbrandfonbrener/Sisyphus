@@ -171,6 +171,9 @@ class Model(object):
         #Omega regularization
         #reg += self.Omega_reg()
 
+        # susillo regularization
+        reg += .1 * self.sussilo_reg()
+
         return reg
 
     # implement one step of the RNN
@@ -367,6 +370,19 @@ class Model(object):
 
         return reg / nelems
 
+    def sussilo_reg(self):
+
+        states = self.states
+
+        reg = 0
+
+        for state in states:
+            dJr = tf.matmul(tf.nn.relu(state),
+                      tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity, self.Dale_rec))
+            reg += tf.reduce_sum(tf.square(dJr))
+
+        return reg / (self.N_steps * self.N_batch)
+
     # train the model using Adam
     def train(self, sess, generator,
               learning_rate=.001, training_iters=50000,
@@ -378,7 +394,7 @@ class Model(object):
 
         #train with gradient clipping
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-        grads = optimizer.compute_gradients(self.loss)
+        grads = optimizer.compute_gradients(self.loss, var_list=var_list)
         clipped_grads = [(tf.clip_by_norm(grad, 1.0), var)
                          if grad is not None else (grad, var)
                         for grad, var in grads]
