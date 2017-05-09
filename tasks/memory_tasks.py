@@ -58,7 +58,7 @@ def build_train_trials(params):
     seq_dur = input_wait + stim_dur + mem_gap + stim_dur + out_dur
 
     input_pattern = np.random.randint(2,size=(sample_size,2))
-    input_order = np.random.randint(2,size=(sample_size))
+    #input_order = np.random.randint(2,size=(sample_size,2))
     if task == 'xor':
         output_pattern = (np.sum(input_pattern,1) == 1).astype('float') #xor
     elif task == 'or':
@@ -66,7 +66,7 @@ def build_train_trials(params):
     elif task == 'and':
         output_pattern = (np.sum(input_pattern,1) >= 2).astype('float') #and
     elif task == 'memory_saccade':
-        output_pattern = input_pattern[:,0]                             #memory saccade with distractor
+        output_pattern = input_pattern[:,0] #input_pattern[range(np.shape(input_pattern)[0]),input_order[:,0]]                             #memory saccade with distractor
 
     input_times = np.zeros([sample_size, n_in], dtype=np.int)
     output_times = np.zeros([sample_size, 1], dtype=np.int)
@@ -78,8 +78,8 @@ def build_train_trials(params):
 
         in_period1 = range(input_wait,(input_wait+stim_dur))
         in_period2 = range(input_wait+stim_dur+mem_gap,(input_wait+stim_dur+mem_gap+stim_dur))
-        x_train[sample,in_period1,0] = input_pattern[sample,0]
-        x_train[sample,in_period2,1] = input_pattern[sample,1]
+        x_train[sample,in_period1,input_pattern[sample,0]] = 1
+        x_train[sample,in_period2,input_pattern[sample,1]] = 1 #input_pattern[sample,input_order[sample,1]]
         
         out_period = range(input_wait+stim_dur+mem_gap+stim_dur,input_wait+stim_dur+mem_gap+stim_dur+out_dur)
         y_train[sample,out_period,output_pattern[sample]] = 1
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     weights_path = '../weights/mem_sac.npz'
     #weights_path = None
     
-    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=60, out_dur=30, N_rec=n_hidden,
+    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden,
                         n_out = n_out, n_in = n_in,
                         rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
