@@ -3,6 +3,7 @@ import tensorflow as tf
 from backend.networks import Model
 import backend.visualizations as V
 from backend.simulation_tools import Simulator
+import matplotlib.pyplot as plt
 
 
 # Builds a dictionary of parameters that specifies the information
@@ -57,6 +58,7 @@ def build_train_trials(params):
     seq_dur = input_wait + stim_dur + mem_gap + stim_dur + out_dur
 
     input_pattern = np.random.randint(2,size=(sample_size,2))
+    input_order = np.random.randint(2,size=(sample_size))
     if task == 'xor':
         output_pattern = (np.sum(input_pattern,1) == 1).astype('float') #xor
     elif task == 'or':
@@ -71,7 +73,7 @@ def build_train_trials(params):
 
 
     x_train = np.zeros([sample_size, seq_dur, 2])
-    y_train = 0.5 * np.ones([sample_size, seq_dur, 1])
+    y_train = 0.1 * np.ones([sample_size, seq_dur, 2])
     for sample in np.arange(sample_size):
 
         in_period1 = range(input_wait,(input_wait+stim_dur))
@@ -80,10 +82,10 @@ def build_train_trials(params):
         x_train[sample,in_period2,1] = input_pattern[sample,1]
         
         out_period = range(input_wait+stim_dur+mem_gap+stim_dur,input_wait+stim_dur+mem_gap+stim_dur+out_dur)
-        y_train[sample,out_period,0] = output_pattern[sample]
+        y_train[sample,out_period,output_pattern[sample]] = 1
 
     #note:#TODO im doing a quick fix, only considering 1 ouput neuron
-    mask = np.ones((sample_size, seq_dur, 1))
+    mask = np.ones((sample_size, seq_dur, 2))
     #for sample in np.arange(sample_size):
     #    mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
     #mask = np.array(mask, dtype=float)
@@ -103,8 +105,8 @@ if __name__ == "__main__":
     #model params
     n_in = 2 
     n_hidden = 100 
-    n_out = 1
-    n_steps = 80 
+    n_out = 2
+    #n_steps = 80 
     tau = 100.0 #As double
     dt = 20.0  #As double
     dale_ratio = 0.8
@@ -114,13 +116,13 @@ if __name__ == "__main__":
     
     #train params
     learning_rate = .001 
-    training_iters = 2000000
+    training_iters = 200000
     display_step = 50
     
-    #weights_path = './weights/mem_sac.npz'
-    weights_path = None
+    weights_path = '../weights/mem_sac.npz'
+    #weights_path = None
     
-    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden,
+    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=60, out_dur=30, N_rec=n_hidden,
                         n_out = n_out, n_in = n_in,
                         rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
@@ -135,14 +137,15 @@ if __name__ == "__main__":
     data = generator.next()
     #output,states = model.test(sess, input, weights_path = weights_path)
     
-    #sim = Simulator(params, weights_path="./weights/mem_sac.npz")
-    #output,states = sim.run_trials(data[0], 100)
     
     W = model.W_rec.eval(session=sess)
     U = model.W_in.eval(session=sess)
     Z = model.W_out.eval(session=sess)
     brec = model.b_rec.eval(session=sess)
     bout = model.b_out.eval(session=sess)
+    
+    sim = Simulator(params, weights_path=weights_path)
+    output,states = sim.run_trials(data[0], 50)
     
     sess.close()
 
