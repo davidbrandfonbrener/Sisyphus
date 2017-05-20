@@ -59,6 +59,20 @@ class Simulator(object):
                                 np.absolute(self.W_out),
                                 self.dale_out)))\
                         + self.b_out
+                        
+        else:
+            new_state = (1-self.alpha) * state \
+                        + self.alpha * (np.matmul(np.maximum(state, np.zeros(state.shape)),
+                                np.transpose(self.W_rec * self.connect_mat))
+                            + np.matmul(rnn_in, np.transpose(self.W_in) )
+                            + self.b_rec)\
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * np.random.normal(loc=0.0, scale=1.0, size=state.shape)
+
+            new_output = \
+                        np.matmul(
+                            np.maximum(new_state, np.zeros(state.shape)),
+                            np.transpose(self.W_out))\
+                        + self.b_out
 
             return new_output, new_state
 

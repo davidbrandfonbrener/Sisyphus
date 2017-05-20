@@ -109,7 +109,7 @@ if __name__ == "__main__":
     #n_steps = 80 
     tau = 100.0 #As double
     dt = 20.0  #As double
-    dale_ratio = 0.8
+    dale_ratio = 0
     rec_noise = 0.00001
     stim_noise = 0.2
     batch_size = 128
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     weights_path = '../weights/mem_sac.npz'
     #weights_path = None
     
-    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=20, out_dur=30, N_rec=n_hidden,
+    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=80, out_dur=30, N_rec=n_hidden,
                         n_out = n_out, n_in = n_in,
                         rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
