@@ -137,7 +137,6 @@ class Model(object):
             self.predictions, self.states = self.compute_predictions()
             self.error = self.mean_square_error()
             self.loss = self.error + self.regularization()
-            tf.verify_tensor_all_finite(self.loss, "broken loss")
 
     # regularized loss function
     def reg_loss(self):
@@ -213,7 +212,7 @@ class Model(object):
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
                           * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
-            
+
         return new_state
 
     def rnn_output(self, new_state):
@@ -350,9 +349,7 @@ class Model(object):
         dxt_list = tf.gradients(self.error, states)
 
         dxt = tf.stack(dxt_list)
-        dxt = tf.Print(dxt, [dxt], message="dxt:")
         xt = tf.stack(states)
-        xt = tf.Print(xt, [xt], message="xt:")
 
         num = (1 - self.alpha) * dxt + tf.tensordot(self.alpha * dxt ,
                                                  tf.transpose(
@@ -373,7 +370,11 @@ class Model(object):
         Omega = tf.square(bounded - 1.0)
         Omega = tf.reduce_sum(tf.reduce_mean(Omega, axis=1)) / (1.0 * tf.reduce_sum(nelems))
 
-        return tf.gradients(Omega, self.W_rec)
+        out = tf.gradients(Omega, self.W_rec)
+
+        out[0] = tf.Print(out[0], [out[0], self.W_rec], "bad omega grads")
+
+        return out
 
     def sussillo_reg(self):
 
@@ -407,8 +408,6 @@ class Model(object):
         clipped_grads[0] = (tf.add(self.dOmega_dWrec()[0], clipped_grads[0][0]), clipped_grads[0][1])
 
         #numerical precision check
-        tf.verify_tensor_all_finite(clipped_grads[0][0], "broken")
-
         optimize = optimizer.apply_gradients(clipped_grads)
 
         #run session
@@ -428,7 +427,7 @@ class Model(object):
                 print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
                       "{:.6f}".format(loss))
             step += 1
-        t_2 = time()
+        t2 = time()
         print("Optimization Finished!")
 
         #save weights

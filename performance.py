@@ -25,7 +25,7 @@ for ns in n_steps:
             configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
             sess = tf.Session(config=configuration)
 
-            t = model.train(sess, generator, training_iters=10000, learning_rate=.01, weights_path="./weights/flipflop.npz")
+            t = model.train(sess, generator, training_iters=10000, learning_rate=.01, weights_path=None)
 
             print "n_steps: %d, n_rec: %d, n_batch: %d, time: %f" %(ns, nr, nb, t2 - t1)
 
