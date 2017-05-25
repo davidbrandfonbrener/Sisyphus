@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 import numpy as np
+from time import time
 
 # Lets make sure to keep things object-oriented,
 # so that all future networks we build will extend
@@ -211,7 +212,7 @@ class Model(object):
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise)\
                           * tf.random_normal(state.get_shape(), mean=0.0, stddev=1.0)
-            
+
         return new_state
 
     def rnn_output(self, new_state):
@@ -339,37 +340,41 @@ class Model(object):
         # add diagnal matrix 1-alpha to account for persistance tau
         return (1.1/rho) * W  # - .9*np.diag(np.ones(self.N_rec)*(1-self.alpha)) #correct for tau
 
-    #TODO: 1) Omega regularizer, 2) susillo regularizer
     # vanishing gradient regularization, Omega, as in Pascanu
-    #NOTE: this is RELU specific
-    def Omega_reg(self):
+    # NOTE: this is RELU specific
+    def dOmega_dWrec(self):
 
+        # states in shape timesteps, batch, n_rec
         states = self.states
         dxt_list = tf.gradients(self.error, states)
 
-        reg = 0
-        nelems = 0
+        dxt = tf.stack(dxt_list)
+        xt = tf.stack(states)
 
-        for i, dxt in enumerate(dxt_list):
-            num = (1 - self.alpha) * dxt + tf.matmul(self.alpha * dxt ,
-                                                     tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity, self.Dale_rec)) * \
-                                            tf.where(tf.greater(states[i], 0), tf.ones_like(states[i]), tf.zeros_like(states[i]))
-            denom = dxt
-            #sum over hidden units
-            num = tf.reduce_sum(tf.square(num), 1)
-            denom = tf.reduce_sum(tf.square(denom), 1)
+        num = (1 - self.alpha) * dxt + tf.tensordot(self.alpha * dxt ,
+                                                 tf.transpose(
+                                                     tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity,
+                                                               self.Dale_rec)),
+                                                 axes=1) * \
+                                        tf.where(tf.greater(xt, 0), tf.ones_like(xt), tf.zeros_like(xt))
+        denom = dxt
 
-            bounded = tf.where(tf.greater(denom, 1e-20), num/denom, tf.ones_like(num))
-            nelems += tf.reduce_mean(tf.where(tf.greater(denom, 1e-20), tf.ones_like(num), tf.zeros_like(num)))
+        # sum over hidden units
+        num = tf.reduce_sum(tf.square(num), axis=2)
+        denom = tf.reduce_sum(tf.square(denom), axis=2)
 
-            tf.verify_tensor_all_finite(bounded, "nope")
+        bounded = tf.where(tf.greater(denom, 1e-20), tf.div(num, 1.0 * denom), tf.ones_like(num))
+        nelems = tf.reduce_mean(tf.where(tf.greater(denom, 1e-20), 1.0 * tf.ones_like(num), 1.0 * tf.zeros_like(num)), axis=1)
 
-            #sum mean over each batch by time steps
-            reg += tf.reduce_mean(tf.square(bounded - 1))
+        #sum mean over each batch by time steps
+        Omega = tf.square(bounded - 1.0)
+        Omega = tf.reduce_sum(tf.reduce_mean(Omega, axis=1)) / (1.0 * tf.reduce_sum(nelems))
 
-        tf.verify_tensor_all_finite(reg, "nope")
+        out = tf.gradients(Omega, self.W_rec)
 
-        return reg / nelems
+        out[0] = tf.Print(out[0], [out[0], self.W_rec], "bad omega grads")
+
+        return out
 
     def sussillo_reg(self):
 
@@ -399,12 +404,18 @@ class Model(object):
         clipped_grads = [(tf.clip_by_norm(grad, 1.0), var)
                          if grad is not None else (grad, var)
                         for grad, var in grads]
+        #add vanishing gradient regularizer
+        clipped_grads[0] = (tf.add(self.dOmega_dWrec()[0], clipped_grads[0][0]), clipped_grads[0][1])
+
+        #numerical precision check
         optimize = optimizer.apply_gradients(clipped_grads)
 
         #run session
         sess.run(tf.global_variables_initializer())
         step = 1
 
+        #time training
+        t1 = time()
         # Keep training until reach max iterations
         while step * batch_size < training_iters:
             batch_x, batch_y, output_mask = generator.next()
@@ -416,6 +427,7 @@ class Model(object):
                 print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
                       "{:.6f}".format(loss))
             step += 1
+        t2 = time()
         print("Optimization Finished!")
 
         #save weights
@@ -430,6 +442,8 @@ class Model(object):
                                     rec_Connectivity=self.rec_Connectivity.eval(session=sess),
                                     output_Connectivity=self.output_Connectivity.eval(session=sess))
             print("Model saved in file: %s" % weights_path)
+
+        return (t2 - t1)
 
 
     # use a trained model to get test outputs

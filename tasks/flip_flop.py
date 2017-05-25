@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from backend.networks import Model
+from backend import networks
 import backend.visualizations as V
 from backend.simulation_tools import Simulator
 
@@ -50,7 +50,7 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['L2_rec'] = 0
     params['L2_out'] = .1
     params['L2_firing_rate'] = 1.0
-    params['sussillo_constant'] = .01
+    params['sussillo_constant'] = .0001
 
     return params
 
@@ -116,7 +116,7 @@ params = set_params(N_batch= 64,
                     dale_ratio=.8, tau=100, dt=10.)
 
 generator = generate_train_trials(params)
-model = Model(params)
+model = networks.Model(params)
 
 configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
 sess = tf.Session(config=configuration)
