@@ -102,6 +102,14 @@ def generate_train_trials(params):
         
 if __name__ == "__main__":
     
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('mem_gap', help="supply memory gap length", type=int)
+    args = parser.parse_args()
+    
+    mem_gap_length = args.mem_gap
+    
     #model params
     n_in = 2 
     n_hidden = 100 
@@ -116,13 +124,13 @@ if __name__ == "__main__":
     
     #train params
     learning_rate = .001 
-    training_iters = 200000
+    training_iters = 2000
     display_step = 50
     
-    weights_path = '../weights/mem_sac.npz'
+    weights_path = '../weights/mem_sac_' + str(mem_gap_length) + '.npz'
     #weights_path = None
     
-    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=80, out_dur=30, N_rec=n_hidden,
+    params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=mem_gap_length, out_dur=30, N_rec=n_hidden,
                         n_out = n_out, n_in = n_in,
                         rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
