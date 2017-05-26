@@ -111,7 +111,7 @@ def generate_train_trials(params):
         yield build_train_batch(params)
 
 params = set_params(N_batch= 64,
-                    input_wait=5, stim_dur=5, quiet_gap=10, N_turns=5,
+                    input_wait=5, stim_dur=10, quiet_gap=20, N_turns=2,
                     rec_noise=0.1, stim_noise=0.1,
                     dale_ratio=.8, tau=100, dt=10.)
 

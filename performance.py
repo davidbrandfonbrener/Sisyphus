@@ -7,7 +7,7 @@ import numpy as np
 
 n_steps = [20, 50, 100, 200, 400]
 n_rec = [10, 50, 200, 500]
-N_batch = [32, 64, 128]
+N_batch = [32]
 
 for ns in n_steps:
     for nr in n_rec:
@@ -27,5 +27,7 @@ for ns in n_steps:
 
             t = model.train(sess, generator, training_iters=10000, learning_rate=.01, weights_path=None)
 
-            print "n_steps: %d, n_rec: %d, n_batch: %d, time: %f" %(ns, nr, nb, t2 - t1)
+            print "n_steps: %d, n_rec: %d, n_batch: %d, time: %f" %(ns, nr, nb, t)
+
+            tf.reset_default_graph()
 

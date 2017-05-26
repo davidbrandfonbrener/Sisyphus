@@ -134,7 +134,7 @@ class Model(object):
             # ------------------------------------------------
             # Network loss
             # ------------------------------------------------
-            self.predictions, self.states = self.compute_predictions()
+            self.predictions, self.states = self.compute_predictions_scan()
             self.error = self.mean_square_error()
             self.loss = self.error + self.regularization()
 
@@ -310,7 +310,7 @@ class Model(object):
                 rnn_states,
                 initializer=tf.zeros([self.N_batch, self.N_out]),
                 parallel_iterations= 1)
-        return tf.transpose(rnn_outputs, [1, 0, 2]), rnn_states
+        return tf.transpose(rnn_outputs, [1, 0, 2]), tf.unstack(rnn_states)
 
 
     #fix spectral radius of recurrent matrix
@@ -348,14 +348,17 @@ class Model(object):
         states = self.states
         dxt_list = tf.gradients(self.error, states)
 
+        dxt_list[0] = tf.Print(dxt_list[0], [dxt_list[0]], "dxt 0: ")
+
+        test = tf.gradients(states[-1], states[0])
+
         dxt = tf.stack(dxt_list)
         xt = tf.stack(states)
 
         num = (1 - self.alpha) * dxt + tf.tensordot(self.alpha * dxt ,
-                                                 tf.transpose(
-                                                     tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity,
-                                                               self.Dale_rec)),
-                                                 axes=1) * \
+                                                    tf.transpose(
+                                                    tf.matmul(tf.abs(self.W_rec) * self.rec_Connectivity,self.Dale_rec)),
+                                                    axes=1) * \
                                         tf.where(tf.greater(xt, 0), tf.ones_like(xt), tf.zeros_like(xt))
         denom = dxt
 
@@ -366,15 +369,16 @@ class Model(object):
         bounded = tf.where(tf.greater(denom, 1e-20), tf.div(num, 1.0 * denom), tf.ones_like(num))
         nelems = tf.reduce_mean(tf.where(tf.greater(denom, 1e-20), 1.0 * tf.ones_like(num), 1.0 * tf.zeros_like(num)), axis=1)
 
-        #sum mean over each batch by time steps
+        # sum mean over each batch by time steps
         Omega = tf.square(bounded - 1.0)
         Omega = tf.reduce_sum(tf.reduce_mean(Omega, axis=1)) / (1.0 * tf.reduce_sum(nelems))
 
         out = tf.gradients(Omega, self.W_rec)
 
-        out[0] = tf.Print(out[0], [out[0], self.W_rec], "bad omega grads")
+        out[0] = tf.Print(out[0], [out[0], self.W_rec, Omega], "omega grads")
+        out[0] = tf.verify_tensor_all_finite(out[0], "dead omega grad")
 
-        return out
+        return out, test
 
     def sussillo_reg(self):
 
@@ -405,9 +409,10 @@ class Model(object):
                          if grad is not None else (grad, var)
                         for grad, var in grads]
         #add vanishing gradient regularizer
-        clipped_grads[0] = (tf.add(self.dOmega_dWrec()[0], clipped_grads[0][0]), clipped_grads[0][1])
+        #out, test = self.dOmega_dWrec()
+        #clipped_grads[0] = (tf.add(out[0], clipped_grads[0][0]), clipped_grads[0][1])
+        #clipped_grads[0] = (tf.Print(clipped_grads[0][0], [clipped_grads[0][0]], "gw_rec"), clipped_grads[0][1])
 
-        #numerical precision check
         optimize = optimizer.apply_gradients(clipped_grads)
 
         #run session
@@ -420,6 +425,7 @@ class Model(object):
         while step * batch_size < training_iters:
             batch_x, batch_y, output_mask = generator.next()
             sess.run(optimize, feed_dict={self.x: batch_x, self.y: batch_y, self.output_mask: output_mask})
+            #print("vanishing gradient: " + str(np.absolute(t[1]).min()))
             if step % display_step == 0:
                 # Calculate batch loss
                 loss = sess.run(self.loss,
