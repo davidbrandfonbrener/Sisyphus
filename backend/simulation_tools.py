@@ -24,14 +24,8 @@ class Simulator(object):
             self.dale_rec = np.diag(dale_vec)
             self.dale_out = np.diag(dale_vec)
 
-        # Connectivity
-        self.connect_mat = np.ones((N_rec, N_rec))
-        autapse = self.autapse = params.get('autapse', True)
-        if not autapse:
-            self.connect_mat -= np.diag(np.ones(N_rec))
 
-
-        # Trained matrices
+        # Trained matrices with connectivity
         weights = np.load(weights_path)
         self.W_in  = weights['W_in'] * weights['input_Connectivity']
         self.W_rec = weights['W_rec'] * weights['rec_Connectivity']
@@ -43,14 +37,15 @@ class Simulator(object):
         # Initial state
         self.init_state = weights['init_state']
 
-    def rnn_step(self, state, rnn_in):
+    def rnn_step(self, state, rnn_in, t_connectivity):
         if self.dale_ratio:
             new_state = (1-self.alpha) * state \
                         + self.alpha * (np.matmul(np.maximum(state, np.zeros(state.shape)),
-                                np.transpose(np.matmul(np.absolute(self.W_rec) * self.connect_mat, self.dale_rec)))
+                                np.transpose(np.matmul(np.absolute(self.W_rec) * t_connectivity, self.dale_rec)))
                             + np.matmul(rnn_in, np.transpose(np.absolute(self.W_in)) )
                             + self.b_rec)\
-                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * np.random.normal(loc=0.0, scale=1.0, size=state.shape)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * \
+                          np.random.normal(loc=0.0, scale=1.0, size=state.shape)
 
             new_output = \
                         np.matmul(
@@ -63,10 +58,11 @@ class Simulator(object):
         else:
             new_state = (1-self.alpha) * state \
                         + self.alpha * (np.matmul(np.maximum(state, np.zeros(state.shape)),
-                                np.transpose(self.W_rec * self.connect_mat))
+                                np.transpose(self.W_rec * t_connectivity))
                             + np.matmul(rnn_in, np.transpose(self.W_in) )
                             + self.b_rec)\
-                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * np.random.normal(loc=0.0, scale=1.0, size=state.shape)
+                        + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * \
+                          np.random.normal(loc=0.0, scale=1.0, size=state.shape)
 
             new_output = \
                         np.matmul(
@@ -74,24 +70,29 @@ class Simulator(object):
                             np.transpose(self.W_out))\
                         + self.b_out
 
-            return new_output, new_state
+        return new_output, new_state
 
     # apply the step to a full input vector
-    def run_trial(self, trial_input):
+    def run_trial(self, trial_input, t_connectivity = None):
 
         rnn_inputs = np.split(trial_input, trial_input.shape[0], axis=0)
         state = np.expand_dims(self.init_state[0, :], 0)
         rnn_outputs = []
         rnn_states = []
-        for rnn_input in rnn_inputs:
-            output, state = self.rnn_step(state, rnn_input)
+        for i, rnn_input in enumerate(rnn_inputs):
+            if t_connectivity:
+                output, state = self.rnn_step(state, rnn_input, t_connectivity[i])
+            else:
+                output, state = self.rnn_step(state, rnn_input, np.ones_like(self.W_rec))
+
             rnn_outputs.append(output)
             rnn_states.append(state)
+
         return np.array(rnn_outputs), np.array(rnn_states)
 
 
-    #apply the RNN to a whole batch of inputs
-    def run_trials(self, trial_input, batch_size):
+    # apply the RNN to a whole batch of inputs
+    def run_trials(self, trial_input, batch_size, t_connectivity = None):
 
         rnn_inputs = np.split(trial_input, trial_input.shape[1], axis=1)
         state = np.expand_dims(self.init_state[0, :], 0)
@@ -99,7 +100,12 @@ class Simulator(object):
         rnn_outputs = []
         rnn_states = []
         for rnn_input in rnn_inputs:
-            output, state = self.rnn_step(state, rnn_input)
+            if t_connectivity:
+                output, state = self.rnn_step(state, rnn_input, t_connectivity[i])
+            else:
+                output, state = self.rnn_step(state, rnn_input, np.ones_like(self.W_rec))
+
             rnn_outputs.append(output)
             rnn_states.append(state)
+
         return np.array(rnn_outputs), np.array(rnn_states)

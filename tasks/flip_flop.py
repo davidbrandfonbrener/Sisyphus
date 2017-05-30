@@ -24,9 +24,9 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['stim_noise']       = stim_noise
     params['rec_noise']        = rec_noise
     params['dale_ratio']       = dale_ratio
-    params['tau']               = tau
+    params['tau']               = [tau] * int(N_rec * dale_ratio) + [2 * tau] * int(N_rec * (1 - dale_ratio))
     params['dt']                = dt
-    params['alpha']             = dt/tau
+    params['alpha']             = dt * 1.0/tau
 
     params['N_turns']          = N_turns
     params['input_wait']       = input_wait
@@ -110,24 +110,26 @@ def generate_train_trials(params):
     while 1 > 0:
         yield build_train_batch(params)
 
-params = set_params(N_batch= 64,
-                    input_wait=5, stim_dur=10, quiet_gap=20, N_turns=2,
-                    rec_noise=0.1, stim_noise=0.1,
-                    dale_ratio=.8, tau=100, dt=10.)
 
-generator = generate_train_trials(params)
-model = networks.Model(params)
 
-configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
-sess = tf.Session(config=configuration)
-model.train(sess, generator, training_iters=20000, learning_rate=.01, weights_path="./weights/flipflop.npz")
-
-data = generator.next()
-V.visualize_2_input_one_output_trial(model, sess, data)
-
-V.show_W_in(model, sess)
-V.show_W_rec(model, sess)
-V.show_W_out(model, sess)
-
-sim = Simulator(params, weights_path="./weights/flipflop.npz")
-sim.run_trials(data[0], 100)
+# params = set_params(N_batch= 64, N_rec=10,
+#                     input_wait=5, stim_dur=10, quiet_gap=20, N_turns=2,
+#                     rec_noise=0.1, stim_noise=0.1,
+#                     dale_ratio=.8, tau=100, dt=10.)
+#
+# generator = generate_train_trials(params)
+# model = networks.Model(params)
+#
+# configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
+# sess = tf.Session(config=configuration)
+# model.train(sess, generator, training_iters=50000, learning_rate=.01, weights_path="./weights/flipflop.npz")
+#
+# data = generator.next()
+# V.visualize_2_input_one_output_trial(model, sess, data)
+#
+# V.show_W_in(model, sess)
+# V.show_W_rec(model, sess)
+# V.show_W_out(model, sess)
+#
+# sim = Simulator(params, weights_path="./weights/flipflop.npz")
+# sim.run_trials(data[0], 100)

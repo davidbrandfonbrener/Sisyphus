@@ -52,7 +52,7 @@ class Model(object):
         if self.output_connectivity_mask == None:
             self.output_connectivity_mask = np.ones((N_out, N_rec))
 
-        #regularization coefficients
+        # regularization coefficients
         self.L1_in = params.get('L1_in', 0)
         self.L1_rec = params.get('L1_rec', 0)
         self.L1_out = params.get('L1_out', 0)
@@ -134,7 +134,7 @@ class Model(object):
             # ------------------------------------------------
             # Network loss
             # ------------------------------------------------
-            self.predictions, self.states = self.compute_predictions_scan()
+            self.predictions, self.states = self.compute_predictions()
             self.error = self.mean_square_error()
             self.loss = self.error + self.regularization()
 
@@ -146,11 +146,11 @@ class Model(object):
     def mean_square_error(self):
         return tf.reduce_mean(tf.square(self.output_mask * (self.predictions - self.y)))
 
-    #regularizations
+    # regularizations
     def regularization(self):
         reg = 0
 
-        #L1 weight regularization
+        # L1 weight regularization
         reg += self.L1_in * tf.reduce_mean(tf.abs(self.W_in) * self.input_Connectivity)
         reg += self.L1_rec * tf.reduce_mean(tf.abs(self.W_rec) * self.rec_Connectivity)
         if self.dale_ratio:
@@ -158,7 +158,7 @@ class Model(object):
         else:
             reg += self.L1_out * tf.reduce_mean(tf.abs(self.W_out) * self.output_Connectivity)
 
-        #L2 weight regularization
+        # L2 weight regularization
         reg += self.L2_in * tf.reduce_mean(tf.square(tf.abs(self.W_in) * self.input_Connectivity))
         reg += self.L2_rec * tf.reduce_mean(tf.square(tf.abs(self.W_rec) * self.rec_Connectivity))
         if self.dale_ratio:
@@ -167,11 +167,8 @@ class Model(object):
         else:
             reg += self.L2_out * tf.reduce_mean(tf.square(tf.abs(self.W_out) * self.output_Connectivity))
 
-        #L2 firing rate regularization
+        # L2 firing rate regularization
         reg += self.L2_firing_rate * tf.reduce_mean(tf.square(tf.nn.relu(self.states)))
-
-        #Omega regularization
-        #reg += self.Omega_reg()
 
         # susillo regularization
         reg += self.sussillo_constant * self.sussillo_reg()
@@ -313,10 +310,10 @@ class Model(object):
         return tf.transpose(rnn_outputs, [1, 0, 2]), tf.unstack(rnn_states)
 
 
-    #fix spectral radius of recurrent matrix
+    # fix spectral radius of recurrent matrix
     def initial_W(self):
         
-        #added gamma distributed initial weights as in pycog
+        # added gamma distributed initial weights as in pycog
         if self.dale_ratio:
             self.W_dist0 = 'gamma'
         else:
@@ -348,9 +345,9 @@ class Model(object):
         states = self.states
         dxt_list = tf.gradients(self.error, states)
 
-        dxt_list[0] = tf.Print(dxt_list[0], [dxt_list[0]], "dxt 0: ")
+        #dxt_list[0] = tf.Print(dxt_list[0], [dxt_list[0]], "dxt 0: ")
 
-        test = tf.gradients(states[-1], states[0])
+        test = tf.gradients(states[0], states[-1])
 
         dxt = tf.stack(dxt_list)
         xt = tf.stack(states)
@@ -402,30 +399,30 @@ class Model(object):
                     self.b_rec, self.b_out,
                     self.init_state]
 
-        #train with gradient clipping
+        # train with gradient clipping
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         grads = optimizer.compute_gradients(self.loss, var_list=var_list)
         clipped_grads = [(tf.clip_by_norm(grad, 1.0), var)
                          if grad is not None else (grad, var)
                         for grad, var in grads]
-        #add vanishing gradient regularizer
+
+        # add vanishing gradient regularizer
         #out, test = self.dOmega_dWrec()
         #clipped_grads[0] = (tf.add(out[0], clipped_grads[0][0]), clipped_grads[0][1])
         #clipped_grads[0] = (tf.Print(clipped_grads[0][0], [clipped_grads[0][0]], "gw_rec"), clipped_grads[0][1])
 
         optimize = optimizer.apply_gradients(clipped_grads)
 
-        #run session
+        # run session
         sess.run(tf.global_variables_initializer())
         step = 1
 
-        #time training
+        # time training
         t1 = time()
         # Keep training until reach max iterations
         while step * batch_size < training_iters:
             batch_x, batch_y, output_mask = generator.next()
             sess.run(optimize, feed_dict={self.x: batch_x, self.y: batch_y, self.output_mask: output_mask})
-            #print("vanishing gradient: " + str(np.absolute(t[1]).min()))
             if step % display_step == 0:
                 # Calculate batch loss
                 loss = sess.run(self.loss,
@@ -436,7 +433,7 @@ class Model(object):
         t2 = time()
         print("Optimization Finished!")
 
-        #save weights
+        # save weights
         if weights_path:
             np.savez(weights_path, W_in = self.W_in.eval(session=sess),
                                     W_rec = self.W_rec.eval(session=sess),
