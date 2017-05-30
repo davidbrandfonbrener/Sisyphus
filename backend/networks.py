@@ -30,6 +30,9 @@ class Model(object):
         self.dale_ratio = params['dale_ratio']
         self.rec_noise  = params['rec_noise']
 
+        # biases
+        self.biases = params['biases']
+
         # Dale matrix
         dale_vec = np.ones(N_rec)
         if self.dale_ratio:
@@ -98,11 +101,19 @@ class Model(object):
             self.W_out = tf.get_variable('W_out', [N_out, N_rec],
                                          initializer=tf.constant_initializer(
                                              0.1 * np.random.uniform(-1, 1, size=(self.N_out, self.N_rec))))
-            # Recurrent bias:
-            self.b_rec = tf.get_variable('b_rec', [N_rec], initializer=tf.constant_initializer(0.0))
-            # Output bias:
-            self.b_out = tf.get_variable('b_out', [N_out], initializer=tf.constant_initializer(0.0))
 
+            if self.biases:
+                # Recurrent bias:
+                self.b_rec = tf.get_variable('b_rec', [N_rec], initializer=tf.constant_initializer(0.0))
+                # Output bias:
+                self.b_out = tf.get_variable('b_out', [N_out], initializer=tf.constant_initializer(0.0))
+            else:
+                # zero Recurrent bias:
+                self.b_rec = tf.get_variable('b_rec', [N_rec], initializer=tf.constant_initializer(0.0),
+                                             trainable=False)
+                # zero Output bias:
+                self.b_out = tf.get_variable('b_out', [N_out], initializer=tf.constant_initializer(0.0),
+                                             trainable=False)
             # ------------------------------------------------
             # Non-trainable variables:
             # Overall connectivity and Dale's law matrices

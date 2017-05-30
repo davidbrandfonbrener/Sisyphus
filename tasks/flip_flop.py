@@ -11,7 +11,8 @@ from backend.simulation_tools import Simulator
 def set_params(Name = "flip_flop", N_rec = 50,
                N_turns = 3, input_wait = 3, quiet_gap = 4, stim_dur = 3,
                var_delay_length = 0, stim_noise = 0.1, rec_noise = .1,
-               N_batch = 128, dale_ratio=0.8, dt = 10, tau = 100, seed=None):
+               N_batch = 128, dale_ratio=0.8, dt = 10, tau = 100,
+               biases = False, seed=None):
 
     params = dict()
 
@@ -33,6 +34,8 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['quiet_gap']        = quiet_gap
     params['stim_dur']         = stim_dur
     params['var_delay_length'] = var_delay_length
+
+    params['biases'] = biases
 
     params['input_connectivity_mask'] = None
 
@@ -87,14 +90,14 @@ def build_train_batch(params):
             input_times[sample, i] = input_wait + i * turn_time[sample]
             output_times[sample, i] = input_wait + i * turn_time[sample] + stim_dur
 
-    x_train = np.zeros([N_batch, N_steps, N_in])
+    x_train = np.ones([N_batch, N_steps, N_in]) * .1
     y_train = 0.5 * np.ones([N_batch, N_steps, N_out])
     mask = np.zeros((N_batch, N_steps, N_out))
     for sample in np.arange(N_batch):
         for turn in np.arange(N_turns):
             firing_neuron = np.random.randint(2)  # 0 or 1
-            x_train[sample, input_times[sample, turn]:(input_times[sample, turn] + stim_dur), firing_neuron] = 1
-            y_train[sample, output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]), 0] = firing_neuron
+            x_train[sample, input_times[sample, turn]:(input_times[sample, turn] + stim_dur), firing_neuron] = .9
+            y_train[sample, output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]), 0] = firing_neuron + .1 - firing_neuron * .2
         mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
 
     for sample in np.arange(N_batch):
@@ -112,24 +115,26 @@ def generate_train_trials(params):
 
 
 
-# params = set_params(N_batch= 64, N_rec=10,
-#                     input_wait=5, stim_dur=10, quiet_gap=20, N_turns=2,
-#                     rec_noise=0.1, stim_noise=0.1,
-#                     dale_ratio=.8, tau=100, dt=10.)
-#
-# generator = generate_train_trials(params)
-# model = networks.Model(params)
-#
-# configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
-# sess = tf.Session(config=configuration)
-# model.train(sess, generator, training_iters=50000, learning_rate=.01, weights_path="./weights/flipflop.npz")
-#
-# data = generator.next()
-# V.visualize_2_input_one_output_trial(model, sess, data)
-#
-# V.show_W_in(model, sess)
-# V.show_W_rec(model, sess)
-# V.show_W_out(model, sess)
-#
-# sim = Simulator(params, weights_path="./weights/flipflop.npz")
-# sim.run_trials(data[0], 100)
+if __name__ == '__main__':
+
+    params = set_params(N_batch= 64, N_rec=10,
+                        input_wait=5, stim_dur=10, quiet_gap=20, N_turns=2,
+                        rec_noise=0.1, stim_noise=0.1,
+                        dale_ratio=.8, tau=100, dt=10.)
+
+    generator = generate_train_trials(params)
+    model = networks.Model(params)
+
+    configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
+    sess = tf.Session(config=configuration)
+    model.train(sess, generator, training_iters=100000, learning_rate=.001, weights_path="./weights/flipflop.npz")
+
+    data = generator.next()
+    V.visualize_2_input_one_output_trial(model, sess, data)
+
+    V.show_W_in(model, sess)
+    V.show_W_rec(model, sess)
+    V.show_W_out(model, sess)
+
+    sim = Simulator(params, weights_path="./weights/flipflop.npz")
+    sim.run_trials(data[0], 100)
