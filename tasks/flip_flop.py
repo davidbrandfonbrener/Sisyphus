@@ -25,7 +25,8 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['stim_noise']       = stim_noise
     params['rec_noise']        = rec_noise
     params['dale_ratio']       = dale_ratio
-    params['tau']               = [tau] * int(N_rec * dale_ratio) + [2 * tau] * int(N_rec * (1 - dale_ratio))
+    params['tau']               = tau
+        #[tau] * int(N_rec * dale_ratio) + [2 * tau] * int(N_rec * (1 - dale_ratio))
     params['dt']                = dt
     params['alpha']             = dt * 1.0/tau
 
