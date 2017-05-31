@@ -53,8 +53,8 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['L2_in'] = .1
     params['L2_rec'] = 0
     params['L2_out'] = .1
-    params['L2_firing_rate'] = 1.0
-    params['sussillo_constant'] = .0001
+    params['L2_firing_rate'] = 0
+    params['sussillo_constant'] = .001
 
     return params
 
@@ -119,8 +119,8 @@ def generate_train_trials(params):
 if __name__ == '__main__':
 
     params = set_params(N_batch= 64, N_rec=10,
-                        input_wait=5, stim_dur=10, quiet_gap=20, N_turns=2,
-                        rec_noise=0.1, stim_noise=0.1,
+                        input_wait=5, stim_dur=2, quiet_gap=20, N_turns=2,
+                        rec_noise=0.01, stim_noise=0.01, biases=True,
                         dale_ratio=.8, tau=100, dt=10.)
 
     generator = generate_train_trials(params)
@@ -128,14 +128,14 @@ if __name__ == '__main__':
 
     configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
     sess = tf.Session(config=configuration)
-    model.train(sess, generator, training_iters=100000, learning_rate=.001, weights_path="./weights/flipflop.npz")
+    model.train(sess, generator, training_iters=1000000, learning_rate=.0001, weights_path="./weights/flipflop.npz")
 
     data = generator.next()
     V.visualize_2_input_one_output_trial(model, sess, data)
 
-    V.show_W_in(model, sess)
+    #V.show_W_in(model, sess)
     V.show_W_rec(model, sess)
-    V.show_W_out(model, sess)
+    #V.show_W_out(model, sess)
 
     sim = Simulator(params, weights_path="./weights/flipflop.npz")
     sim.run_trials(data[0], 100)
