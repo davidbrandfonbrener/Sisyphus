@@ -37,32 +37,32 @@ class Simulator(object):
         # Initial state
         self.init_state = weights['init_state']
 
-    def rnn_step(self, state, rnn_in, t_connectivity):
+    def rnn_step(self, state, rnn_in, t_connectivity, use_input):
         if self.dale_ratio:
             new_state = (1-self.alpha) * state \
                         + self.alpha * (np.matmul(np.maximum(state, np.zeros(state.shape)),
-                                np.transpose(np.matmul(np.absolute(self.W_rec) * t_connectivity, self.dale_rec)))
-                            + np.matmul(rnn_in, np.transpose(np.absolute(self.W_in)) )
+                                np.transpose(np.matmul(np.absolute(self.W_rec) * t_connectivity, self.dale_rec)))\
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * \
                           np.random.normal(loc=0.0, scale=1.0, size=state.shape)
+            if use_input:
+                new_state += self.alpha * np.matmul(rnn_in, np.transpose(np.absolute(self.W_in)))
 
-            new_output = \
-                        np.matmul(
+            new_output = np.matmul(
                             np.maximum(new_state, np.zeros(state.shape)),
                             np.transpose(np.matmul(
                                 np.absolute(self.W_out),
-                                self.dale_out)))\
-                        + self.b_out
+                                self.dale_out))) + self.b_out
                         
         else:
             new_state = (1-self.alpha) * state \
                         + self.alpha * (np.matmul(np.maximum(state, np.zeros(state.shape)),
                                 np.transpose(self.W_rec * t_connectivity))
-                            + np.matmul(rnn_in, np.transpose(self.W_in) )
                             + self.b_rec)\
                         + np.sqrt(2.0 * self.alpha * self.rec_noise * self.rec_noise) * \
                           np.random.normal(loc=0.0, scale=1.0, size=state.shape)
+            if use_input:
+                new_state += self.alpha * np.matmul(rnn_in, np.transpose(self.W_in) )
 
             new_output = \
                         np.matmul(
@@ -73,7 +73,7 @@ class Simulator(object):
         return new_output, new_state
 
     # apply the step to a full input vector
-    def run_trial(self, trial_input, t_connectivity = None):
+    def run_trial(self, trial_input, t_connectivity = None, use_input = True):
 
         rnn_inputs = np.split(trial_input, trial_input.shape[0], axis=0)
         state = np.expand_dims(self.init_state[0, :], 0)
@@ -81,9 +81,9 @@ class Simulator(object):
         rnn_states = []
         for i, rnn_input in enumerate(rnn_inputs):
             if t_connectivity:
-                output, state = self.rnn_step(state, rnn_input, t_connectivity[i])
+                output, state = self.rnn_step(state, rnn_input, t_connectivity[i], use_input)
             else:
-                output, state = self.rnn_step(state, rnn_input, np.ones_like(self.W_rec))
+                output, state = self.rnn_step(state, rnn_input, np.ones_like(self.W_rec), use_input)
 
             rnn_outputs.append(output)
             rnn_states.append(state)
