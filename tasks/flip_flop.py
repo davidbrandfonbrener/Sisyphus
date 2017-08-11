@@ -19,7 +19,7 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['Name'] = Name
     params['N_in'] = 2
     params['N_rec'] = N_rec
-    params['N_out'] = 1
+    params['N_out'] = 2
     params['N_steps'] = input_wait + N_turns * (stim_dur + quiet_gap + var_delay_length)
     params['N_batch'] = N_batch
     params['stim_noise']       = stim_noise
@@ -50,11 +50,11 @@ def set_params(Name = "flip_flop", N_rec = 50,
     params['L1_in'] = 0
     params['L1_rec'] = 0
     params['L1_out'] = 0
-    params['L2_in'] = .1
+    params['L2_in'] = 0 #.1
     params['L2_rec'] = 0
-    params['L2_out'] = .1
-    params['L2_firing_rate'] = 0
-    params['sussillo_constant'] = .001
+    params['L2_out'] = 0 #.1
+    params['L2_firing_rate'] = 0.1
+    params['sussillo_constant'] = 0.001
 
     return params
 
@@ -91,18 +91,16 @@ def build_train_batch(params):
             input_times[sample, i] = input_wait + i * turn_time[sample]
             output_times[sample, i] = input_wait + i * turn_time[sample] + stim_dur
 
-    x_train = np.zeros([N_batch, N_steps, N_in]) * .1
-    y_train = 0.5 * np.ones([N_batch, N_steps, N_out])
+    x_train = np.ones([N_batch, N_steps, N_in]) * .1
+    y_train = np.ones([N_batch, N_steps, N_out]) * .1
     mask = np.zeros((N_batch, N_steps, N_out))
     for sample in np.arange(N_batch):
         for turn in np.arange(N_turns):
             firing_neuron = np.random.randint(2)  # 0 or 1
             x_train[sample, input_times[sample, turn]:(input_times[sample, turn] + stim_dur), firing_neuron] = 1.0
-            y_train[sample, output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]), 0] = firing_neuron + .1 - firing_neuron * .2
-        mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
+            y_train[sample, output_times[sample, turn]:(input_times[sample, turn] + turn_time[sample]), firing_neuron] = 1.0
+        mask[sample, :, 0] = [0.0 if (x[0] == .1 and x[1] == .1) else 1.0 for x in y_train[sample]]
 
-    for sample in np.arange(N_batch):
-        mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
 
     x_train = x_train + stim_noise * np.random.randn(N_batch, N_steps, 2)
     params['input_times'] = input_times
@@ -119,16 +117,16 @@ def generate_train_trials(params):
 if __name__ == '__main__':
 
     params = set_params(N_batch= 64, N_rec=10,
-                        input_wait=5, stim_dur=2, quiet_gap=10, N_turns=2,
-                        rec_noise=0.01, stim_noise=0.01, biases=True, var_delay_length=20,
-                        dale_ratio=.8, tau=50, dt=10.)
+                        input_wait=5, stim_dur=10, quiet_gap=10, N_turns=3,
+                        rec_noise=0.01, stim_noise=0.01, biases=True, var_delay_length=40,
+                        dale_ratio=.8, tau=20, dt=10.)
 
     generator = generate_train_trials(params)
     model = networks.Model(params)
 
     configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
     sess = tf.Session(config=configuration)
-    model.train(sess, generator, training_iters=500000, learning_rate=.0001, weights_path="./weights/flipflop.npz")
+    model.train(sess, generator, training_iters=100000, learning_rate=.001, weights_path="./weights/flipflop.npz")
 
     data = generator.next()
     V.visualize_2_input_one_output_trial(model, sess, data)

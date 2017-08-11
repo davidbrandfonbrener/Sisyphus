@@ -88,19 +88,22 @@ class Model(object):
             self.W_in = \
                 tf.get_variable('W_in', [N_rec, N_in],
                                 initializer=tf.constant_initializer(
-                                    0.1 * np.random.uniform(-1, 1, size=(self.N_rec, self.N_in))))
+                                    0.1 * np.random.uniform(-1, 1, size=(self.N_rec, self.N_in))),
+                                trainable=False)
             # Recurrent weight matrix:
             # (gamma (Dale) or normal (non-Dale) initialization)
             self.W_rec = \
                 tf.get_variable(
                     'W_rec',
                     [N_rec, N_rec],
-                    initializer=tf.constant_initializer(self.initial_W()))
+                    initializer=tf.constant_initializer(self.initial_W()),
+                    trainable=True)
             # Output weight matrix:
             # (uniform initialization as in pycog)
             self.W_out = tf.get_variable('W_out', [N_out, N_rec],
                                          initializer=tf.constant_initializer(
-                                             0.1 * np.random.uniform(-1, 1, size=(self.N_out, self.N_rec))))
+                                             0.1 * np.random.uniform(-1, 1, size=(self.N_out, self.N_rec))),
+                                         trainable=False)
 
             if self.biases:
                 # Recurrent bias:
