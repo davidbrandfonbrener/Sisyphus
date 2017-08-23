@@ -14,7 +14,7 @@ def set_params(n_in = 2, n_out = 2, input_wait = 3, mem_gap = 4, stim_dur = 3, o
     params = dict()
     params['N_in']             = n_in
     params['N_out']            = n_out
-    params['N_steps']          = input_wait + stim_dur + mem_gap + stim_dur + out_dur
+    params['N_steps']          = input_wait + stim_dur + mem_gap + var_delay_length +stim_dur + out_dur
     params['N_batch']          = sample_size
     params['input_wait']       = input_wait
     params['mem_gap']          = mem_gap
@@ -55,7 +55,7 @@ def build_train_trials(params):
     else:
         var_delay = np.random.randint(var_delay_length, size=sample_size) + 1
 
-    seq_dur = input_wait + stim_dur + mem_gap + stim_dur + out_dur
+    seq_dur = input_wait + stim_dur + mem_gap + var_delay_length + stim_dur + out_dur
 
     input_pattern = np.random.randint(2,size=(sample_size,2))
     #input_order = np.random.randint(2,size=(sample_size,2))
@@ -74,18 +74,20 @@ def build_train_trials(params):
 
     x_train = np.zeros([sample_size, seq_dur, 2])
     y_train = 0.1 * np.ones([sample_size, seq_dur, 2])
+    mask = np.ones((sample_size, seq_dur, 2))
     for sample in np.arange(sample_size):
 
         in_period1 = range(input_wait,(input_wait+stim_dur))
-        in_period2 = range(input_wait+stim_dur+mem_gap,(input_wait+stim_dur+mem_gap+stim_dur))
+        in_period2 = range(input_wait+stim_dur+mem_gap+var_delay[sample],(input_wait+stim_dur+mem_gap+var_delay[sample]+stim_dur))
         x_train[sample,in_period1,input_pattern[sample,0]] = 1
         x_train[sample,in_period2,input_pattern[sample,1]] = 1 #input_pattern[sample,input_order[sample,1]]
         
-        out_period = range(input_wait+stim_dur+mem_gap+stim_dur,input_wait+stim_dur+mem_gap+stim_dur+out_dur)
+        out_period = range(input_wait+stim_dur+mem_gap+var_delay[sample]+stim_dur,input_wait+stim_dur+mem_gap+var_delay[sample]+stim_dur+out_dur)
         y_train[sample,out_period,output_pattern[sample]] = 1
+        mask[sample,range(input_wait+stim_dur+mem_gap+var_delay[sample]+stim_dur+out_dur,seq_dur),:] = 0
 
     #note:#TODO im doing a quick fix, only considering 1 ouput neuron
-    mask = np.ones((sample_size, seq_dur, 2))
+    
     #for sample in np.arange(sample_size):
     #    mask[sample, :, 0] = [0.0 if x == .5 else 1.0 for x in y_train[sample, :, :]]
     #mask = np.array(mask, dtype=float)
@@ -117,21 +119,22 @@ if __name__ == "__main__":
     #n_steps = 80 
     tau = 100.0 #As double
     dt = 20.0  #As double
-    dale_ratio = 0
-    rec_noise = 0.00001
-    stim_noise = 0.2
+    dale_ratio = 0.8
+    rec_noise = 0.0
+    stim_noise = 0.0
     batch_size = 128
+    var_delay_length = 50
     
     #train params
     learning_rate = .001 
-    training_iters = 2000
-    display_step = 50
+    training_iters = 300000
+    display_step = 200
     
     weights_path = '../weights/mem_sac_' + str(mem_gap_length) + '.npz'
     #weights_path = None
     
     params = set_params(epochs=200, sample_size= batch_size, input_wait=10, stim_dur=10, mem_gap=mem_gap_length, out_dur=30, N_rec=n_hidden,
-                        n_out = n_out, n_in = n_in,
+                        n_out = n_out, n_in = n_in, var_delay_length=var_delay_length,
                         rec_noise=rec_noise, stim_noise=stim_noise, dale_ratio=dale_ratio, tau=tau, task='memory_saccade')
     generator = generate_train_trials(params)
     #model = Model(n_in, n_hidden, n_out, n_steps, tau, dt, dale_ratio, rec_noise, batch_size)
