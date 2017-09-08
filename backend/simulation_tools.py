@@ -1,7 +1,7 @@
 import numpy as np
 
 class Simulator(object):
-    def __init__(self,  params, weights_path):
+    def __init__(self,  params, weights_path, weights = None):
         N_in    = self.N_in       = params['N_in']
         N_rec   = self.N_rec      = params['N_rec']
         N_out   = self.N_out      = params['N_out']
@@ -26,7 +26,8 @@ class Simulator(object):
 
 
         # Trained matrices with connectivity
-        weights = np.load(weights_path)
+        if weights is not None:
+            weights = np.load(weights_path)
         self.W_in  = weights['W_in'] * weights['input_Connectivity']
         self.W_rec = weights['W_rec'] * weights['rec_Connectivity']
         self.W_out = weights['W_out'] * weights['output_Connectivity']

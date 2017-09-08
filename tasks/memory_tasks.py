@@ -127,7 +127,7 @@ if __name__ == "__main__":
     
     #train params
     learning_rate = .001 
-    training_iters = 300000
+    training_iters = 30000
     display_step = 200
     
     weights_path = '../weights/mem_sac_' + str(mem_gap_length) + '.npz'
