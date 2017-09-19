@@ -116,9 +116,9 @@ def generate_train_trials(params):
 
 if __name__ == '__main__':
 
-    params = set_params(N_batch= 64, N_rec=10,
+    params = set_params(N_batch= 64, N_rec=30,
                         input_wait=5, stim_dur=10, quiet_gap=10, N_turns=3,
-                        rec_noise=0.01, stim_noise=0.01, biases=True, var_delay_length=40,
+                        rec_noise=0.01, stim_noise=0.01, biases=False, var_delay_length=40,
                         dale_ratio=.8, tau=20, dt=10.)
 
     generator = generate_train_trials(params)
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     configuration = tf.ConfigProto(inter_op_parallelism_threads=10, intra_op_parallelism_threads=10)
     sess = tf.Session(config=configuration)
-    model.train(sess, generator, training_iters=100000, learning_rate=.001, weights_path="./weights/flipflop.npz")
+    model.train(sess, generator, training_iters=10000, learning_rate=.001, weights_path="./weights/flipflop.npz")
 
     data = generator.next()
     V.visualize_2_input_one_output_trial(model, sess, data)
