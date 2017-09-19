@@ -42,7 +42,8 @@ def hahnloser_fixed_point(sim, params, task):
                 fixed = False
 
         if fixed == True:
-            print trial[i, :], s, I
+            # here I is the fixed point, while s is the attained state with the correct sign permutation
+            print trial[i, :], I, s
 
     return points
 
