@@ -28,7 +28,7 @@ def hahnloser_fixed_point(sim, params, task):
         # define active weight matrix
         Wp = np.matmul(np.absolute(sim.W_rec), sim.dale_rec)
         for index in range(sim.N_rec):
-            if index < 0:
+            if s[index] < 0:
                 Wp[:, index] = 0
 
         # check for fixed point
