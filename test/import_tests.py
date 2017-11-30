@@ -1,4 +1,4 @@
 import numpy as np
 import tensorflow as tf
-from backend.networks import Model
-import backend.visualizations as V
+from Sisyphus.backend.networks import Model
+import Sisyphus.backend.visualizations as V
