@@ -1,12 +1,23 @@
 # Project Sisyphus
 
-todo:
+This is an ongoing long-term project to develop a concise and easy-to-use package for the modeling and analysis of neural network dynamics.
 
-visualization
+Code is written and upkept by: @davidbrandfonbrener @dbehrlic @ABAtanasov
 
-performance tests (get it running on the cluster)
+## TODO
 
-regularization
+  ### @Dave Translate the structure of tasks into object oriented code:
+    i.e. make a class "task.py" so that each task (e.g. romo, rdm) extends this class
 
+  ### @Alex Make it possible to set up a simulator.py without needing to read in weights saved to a file
+    It should be easy for a user to manually construct a 3-neuron network without relying on tensorflow
+    
+  ### @Dave+Alex Clean up the model class
+    So far we have been using a single "model" class for everything, and there are many redundant sub-methods
+
+  ### @Alex Make a test directory
+    Sync this package with travisCI so that after every new push, within an hour or so 
+    we'll know that each network and analysis module still runs correctly
+    This will also be more compelling for users to know that the code has coverage
 
 
